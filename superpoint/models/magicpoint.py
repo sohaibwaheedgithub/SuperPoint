@@ -54,9 +54,9 @@ class MagicPoint(keras.Model):
 
         outputs = self(data["image"], training=True)
         self.compute_loss(
-            y={"bins": data["bins"]},
-            y_pred=outputs,
-            sample_weight={"bins": data["sample_weights"]},
+            y=data["bins"],
+            y_pred=outputs["bins"],
+            sample_weight=data["sample_weights"],
         )
 
         return {m.name: m.result() for m in self.metrics}

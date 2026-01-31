@@ -41,10 +41,13 @@ def generate_bins(points):
 
 
 def parse_example(example):
+    # Images saved in tfrecords are of resolution 120 x 160, along with points of coordinates within 120 x 160 grid
+    # That's why need to rescale and points
+    # image will be rescaled in dataset builder on the run (to save disk space)
+    # But rescaled points have will to be saved in disk as bins generation is dependant on points
     parsed = tf.io.parse_single_example(example, INPUT_FEATURES)
-
     image = parsed["image"]                                                  
-    points = tf.io.parse_tensor(parsed["points"], out_type=tf.float32) / 2  
+    points = tf.io.parse_tensor(parsed["points"], out_type=tf.float32)  
     scale_y = MP_INPUT_SHAPE[0] / 120
     scale_x = MP_INPUT_SHAPE[1] / 160
     points *= [scale_y, scale_x]                                    

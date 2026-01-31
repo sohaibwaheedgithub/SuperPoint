@@ -131,6 +131,17 @@ def main(config_path: str):
                 [train_tfrecord],
                 batch_size=cfg.training.batch_size
             )
+            
+            from superpoint.metrics.corner_detection_average_precision import CornerDetectionAveragePrecision
+            metric = CornerDetectionAveragePrecision()
+            for batch in train_dataset.take(1):
+                outputs = model(batch["image"], training=False)
+                heatmap = outputs["heatmap"]
+                metric.update_state(batch["points"], outputs["heatmap"])
+                metric_results = metric.result()
+                print(metric_results)
+            sys.exit(0) 
+
 
             model.fit(
                 train_dataset,
