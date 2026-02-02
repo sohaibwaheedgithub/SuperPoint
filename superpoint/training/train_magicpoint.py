@@ -12,6 +12,8 @@ from superpoint.utils.reproducibility import set_global_determinism
 from superpoint.datasets.magicpoint_dataset import MagicPointDataset
 from superpoint.configs.magicpoint_config import load_magicpoint_config
 from superpoint.callbacks.train_state_checkpoint import TrainingStateCheckpoint
+from superpoint.metrics.corner_detection_average_precision import CornerDetectionAveragePrecision
+            
 
 
 
@@ -60,7 +62,8 @@ def main(config_path: str):
     logger.info("Compiling Model")
     model.compile(
         optimizer=keras.optimizers.Adam(learning_rate=cfg.training.learning_rate),
-        loss=keras.losses.SparseCategoricalCrossentropy(from_logits=True)
+        loss=keras.losses.SparseCategoricalCrossentropy(from_logits=True),
+        #metrics=[CornerDetectionAveragePrecision(name="corner_detection_average_precision")]
     )
     logger.info("Compilation Completed")
     
@@ -132,17 +135,6 @@ def main(config_path: str):
                 batch_size=cfg.training.batch_size
             )
             
-            from superpoint.metrics.corner_detection_average_precision import CornerDetectionAveragePrecision
-            metric = CornerDetectionAveragePrecision()
-            for batch in train_dataset.take(1):
-                outputs = model(batch["image"], training=False)
-                heatmap = outputs["heatmap"]
-                metric.update_state(batch["points"], outputs["heatmap"])
-                metric_results = metric.result()
-                print(metric_results)
-            sys.exit(0) 
-
-
             model.fit(
                 train_dataset,
                 epochs=1,

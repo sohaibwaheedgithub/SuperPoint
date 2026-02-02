@@ -46,6 +46,10 @@ class MagicPoint(keras.Model):
         grads = tape.gradient(loss, self.trainable_variables)
         self.optimizer.apply_gradients(zip(grads, self.trainable_variables))
 
+        for m in self.metrics:
+            if m.name == "corner_detection_average_precision":
+                m.update_state(data["points"], outputs["heatmap"])
+
         return {m.name: m.result() for m in self.metrics}
 
 
@@ -58,5 +62,9 @@ class MagicPoint(keras.Model):
             y_pred=outputs["bins"],
             sample_weight=data["sample_weights"],
         )
+
+        for m in self.metrics:
+            if m.name == "corner_detection_average_precision":
+                m.update_state(data["points"], outputs["heatmap"])
 
         return {m.name: m.result() for m in self.metrics}
