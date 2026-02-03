@@ -47,6 +47,8 @@ class MagicPoint(keras.Model):
         self.optimizer.apply_gradients(zip(grads, self.trainable_variables))
 
         for m in self.metrics:
+            if m.name == "loss":
+                m.update_state(loss)
             if m.name == "corner_detection_average_precision":
                 m.update_state(data["points"], outputs["heatmap"])
 
@@ -57,13 +59,15 @@ class MagicPoint(keras.Model):
     def test_step(self, data):
 
         outputs = self(data["image"], training=True)
-        self.compute_loss(
+        loss = self.compute_loss(
             y=data["bins"],
             y_pred=outputs["bins"],
             sample_weight=data["sample_weights"],
         )
 
         for m in self.metrics:
+            if m.name == "loss":
+                m.update_state(loss)
             if m.name == "corner_detection_average_precision":
                 m.update_state(data["points"], outputs["heatmap"])
 
