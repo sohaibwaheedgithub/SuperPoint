@@ -1,14 +1,10 @@
 import os
-import random
 import numpy as np
 import tensorflow as tf
 from logging import Logger
 
 
 def set_global_determinism(seed: int, logger: Logger, deterministic: bool = True):
-    # Python
-    random.seed(seed)
-
     # NumPy
     np.random.seed(seed)
 

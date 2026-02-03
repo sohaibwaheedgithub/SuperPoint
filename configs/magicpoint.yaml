@@ -1,7 +1,7 @@
 dataset:
   train_dir: "data/tfrecords/synthetic_shapes/train"
   valid_dir: "data/tfrecords/synthetic_shapes/valid"
-  total_shards: 7
+  total_shards: 23
 
 
 training:

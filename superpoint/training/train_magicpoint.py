@@ -1,6 +1,7 @@
 import sys
 import json
 import keras
+import random
 import tensorflow as tf
 from pathlib import Path
 from superpoint.constants import MP_INPUT_SHAPE
@@ -107,9 +108,9 @@ def main(config_path: str):
     
     logger.info("Building validation dataset")
 
-    valid_tfrecords = sorted(tf.io.gfile.glob(
+    valid_tfrecords = [random.choice(tf.io.gfile.glob(
         (Path(cfg.dataset.valid_dir) / "*.tfrecord").as_posix()
-    ))
+    ))]
     assert len(valid_tfrecords) > 0, "No validation data found"
 
     valid_dataset = dataset_builder.build_dataset(
