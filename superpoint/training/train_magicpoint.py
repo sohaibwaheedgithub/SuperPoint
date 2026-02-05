@@ -64,7 +64,7 @@ def main(config_path: str):
     model.compile(
         optimizer=keras.optimizers.Adam(learning_rate=cfg.training.learning_rate),
         loss=keras.losses.SparseCategoricalCrossentropy(from_logits=True),
-        #metrics=[CornerDetectionAveragePrecision(name="corner_detection_average_precision")]
+        metrics=[CornerDetectionAveragePrecision(name="corner_detection_average_precision")]
     )
     logger.info("Compilation Completed")
     
