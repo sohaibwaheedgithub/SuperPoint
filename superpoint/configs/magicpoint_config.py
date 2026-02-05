@@ -12,7 +12,6 @@ class DatasetConfig:
 @dataclass
 class TrainingConfig:
     batch_size: int
-    epochs: int
     steps_per_epoch: int
     learning_rate: float
 

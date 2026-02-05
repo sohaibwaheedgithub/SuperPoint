@@ -13,6 +13,7 @@ from superpoint.utils.reproducibility import set_global_determinism
 from superpoint.datasets.magicpoint_dataset import MagicPointDataset
 from superpoint.configs.magicpoint_config import load_magicpoint_config
 from superpoint.callbacks.fit_logger import FitLogger
+from superpoint.callbacks.tb_loss_logger import TensorboardLossLogger
 from superpoint.callbacks.train_state_checkpoint import TrainingStateCheckpoint
             
 
@@ -101,6 +102,7 @@ def main(config_path: str):
         best_ckpt_manager=best_ckpt_manager,
         shard_start=state["shard"],
         tfrecord_start=state["tfrecord"],
+        epoch_start=state["epoch"],
         state_path=state_path,
         monitor=cfg.checkpointing.monitor,
         mode=cfg.checkpointing.mode,
@@ -142,8 +144,12 @@ def main(config_path: str):
                 train_dataset,
                 epochs=1,
                 steps_per_epoch=cfg.training.steps_per_epoch,
-                validation_data=valid_dataset,
-                callbacks=[state_ckpt_cb, FitLogger(logger, context=Path(train_tfrecord).name)],
+                #validation_data=valid_dataset,
+                callbacks=[
+                    state_ckpt_cb,
+                    FitLogger(logger, epoch=state_ckpt_cb.epoch_start),
+                    #TensorboardLossLogger(tb_writer),
+                ],
                 verbose=1,
             )
         
