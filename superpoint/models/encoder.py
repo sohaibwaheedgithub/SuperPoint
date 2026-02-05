@@ -5,8 +5,9 @@ import keras
 class SEConvBlock(keras.layers.Layer):
     def __init__(self, filters, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        self._filters = filters
         self.conv2d_1 = keras.layers.Conv2D(
-            filters=filters, 
+            filters=filters,
             kernel_size=3, 
             padding="same", 
             activation="relu", 
@@ -33,6 +34,12 @@ class SEConvBlock(keras.layers.Layer):
             ),
             training=training
         )
+
+    def compute_output_shape(self, input_shape):
+        if input_shape is None:
+            return None
+        batch, height, width, _channels = input_shape
+        return (batch, height, width, self._filters)
         
 # Shared Encoder
 class SharedEncoder(keras.layers.Layer):
@@ -63,6 +70,17 @@ class SharedEncoder(keras.layers.Layer):
             ),
             training=training
         )
+
+
+    def compute_output_shape(self, input_shape):
+        shape = self.SEConvBlock_1.compute_output_shape(input_shape)
+        shape = self.maxPool.compute_output_shape(shape)
+        shape = self.SEConvBlock_2.compute_output_shape(shape)
+        shape = self.maxPool.compute_output_shape(shape)
+        shape = self.SEConvBlock_3.compute_output_shape(shape)
+        shape = self.maxPool.compute_output_shape(shape)
+        shape = self.SEConvBlock_4.compute_output_shape(shape)
+        return shape
     
 
 

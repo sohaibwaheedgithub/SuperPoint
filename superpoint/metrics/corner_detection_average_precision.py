@@ -24,9 +24,6 @@ class CornerDetectionAveragePrecision(keras.metrics.Metric):
         self.n_valid_instances = self.add_weight(shape=(), initializer="zeros", dtype=cdap_dtype)
 
 
-    def build(self, input_shape):
-        super().build(input_shape)
-
 
     @tf.function(input_signature=((
         tf.TensorSpec(shape=[None, 2], dtype=cdap_dtype),
@@ -141,9 +138,7 @@ class CornerDetectionAveragePrecision(keras.metrics.Metric):
     def result(self):
         return {
             "mAP": self.mAP,
-            "mLE": self.mLE,
-            "recalls": self.batch_recalls,
-            "precisions": self.batch_precisions
+            "mLE": self.mLE
         }
    
         

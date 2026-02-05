@@ -211,3 +211,4 @@ data/
 .vscode/
 logs/
 runs/
+configs/

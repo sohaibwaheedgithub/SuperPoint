@@ -3,6 +3,7 @@ import tensorflow as tf
 from superpoint.models.encoder import SharedEncoder
 from superpoint.models.decoder import Decoder
 from superpoint.models.post_processor import DetectorPostProcessor
+from superpoint.metrics.corner_detection_average_precision import CornerDetectionAveragePrecision
 
 
 
@@ -15,9 +16,16 @@ class MagicPoint(keras.Model):
         self.encoder = SharedEncoder()
         self.decoder = Decoder(65)
         self.post = DetectorPostProcessor()
+        self.cdap_metric = CornerDetectionAveragePrecision(
+            name="corner_detection_average_precision"
+        )
 
         self.mean = tf.constant(mean, dtype=tf.float32)
         self.variance = tf.constant(variance, dtype=tf.float32)
+
+    @property
+    def metrics(self):
+        return [self.cdap_metric]
 
 
     def call(self, inputs, training=False):
@@ -46,16 +54,11 @@ class MagicPoint(keras.Model):
         grads = tape.gradient(loss, self.trainable_variables)
         self.optimizer.apply_gradients(zip(grads, self.trainable_variables))
         
-        logs = {}
-        for m in self.metrics:
-            if m.name == "loss":
-                m.update_state(loss)
-                logs[m.name] = m.result()
-            if m.name == "corner_detection_average_precision":
-                m.update_state(data["points"], outputs["heatmap"])
-                logs[m.name] = m.result()
-
-        return logs
+        self.cdap_metric.update_state(data["points"], outputs["heatmap"])
+        return {
+            "loss": loss,
+            **self.cdap_metric.result()
+        }
 
 
 
@@ -68,13 +71,8 @@ class MagicPoint(keras.Model):
             sample_weight=data["sample_weights"],
         )
 
-        logs = {}
-        for m in self.metrics:
-            if m.name == "loss":
-                m.update_state(loss)
-                logs[m.name] = m.result()
-            if m.name == "corner_detection_average_precision":
-                m.update_state(data["points"], outputs["heatmap"])
-                logs[m.name] = m.result()
-
-        return logs
+        self.cdap_metric.update_state(data["points"], outputs["heatmap"])
+        return {
+            "loss": loss,
+            **self.cdap_metric.result()
+        }

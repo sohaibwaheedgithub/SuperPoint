@@ -14,9 +14,8 @@ from superpoint.datasets.magicpoint_dataset import MagicPointDataset
 from superpoint.configs.magicpoint_config import load_magicpoint_config
 from superpoint.callbacks.fit_logger import FitLogger
 from superpoint.callbacks.train_state_checkpoint import TrainingStateCheckpoint
-from superpoint.metrics.corner_detection_average_precision import CornerDetectionAveragePrecision
             
-            
+
 def main(config_path: str):
     # 1. Load configuration
     cfg = load_magicpoint_config(config_path)
@@ -56,7 +55,7 @@ def main(config_path: str):
         variance=cfg.model.variance,
     )
     
-    model(tf.zeros((2, *MP_INPUT_SHAPE)))
+    model(tf.zeros((cfg.training.batch_size, *MP_INPUT_SHAPE)))
 
     logger.info("Model built successfully")
 
@@ -68,7 +67,6 @@ def main(config_path: str):
     model.compile(
         optimizer=keras.optimizers.Adam(learning_rate=cfg.training.learning_rate),
         loss=keras.losses.SparseCategoricalCrossentropy(from_logits=True),
-        metrics=[CornerDetectionAveragePrecision(name="corner_detection_average_precision")]
     )
     logger.info("Compilation Completed")
     
@@ -154,3 +152,7 @@ def main(config_path: str):
 
 if __name__ == "__main__":
     main("configs/magicpoint.yaml")
+
+
+
+    
