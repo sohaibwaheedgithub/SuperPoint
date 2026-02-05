@@ -11,7 +11,7 @@ from superpoint.constants import (
 
 class CornerDetectionAveragePrecision(keras.metrics.Metric):
     def __init__(self, dtype=None, name=None):
-        super().__init__(dtype, name)
+        super().__init__(dtype=dtype, name=name)
         self.batch_precisions = self.add_weight(shape=(detection_confidences.shape[0],), initializer="zeros", dtype=cdap_dtype)
         self.batch_recalls = self.add_weight(shape=(detection_confidences.shape[0],), initializer="zeros", dtype=cdap_dtype)
         self.mAP = self.add_weight(shape=(), initializer="zeros", dtype=cdap_dtype)
@@ -21,8 +21,13 @@ class CornerDetectionAveragePrecision(keras.metrics.Metric):
         self.instance_recalls = self.add_weight(shape=(detection_confidences.shape[0],), initializer="zeros", dtype=cdap_dtype)
         self.localization_error = self.add_weight(shape=(), initializer="zeros", dtype=cdap_dtype)
         
-        self.n_valid_instances = tf.Variable(0) #self.add_weight(shape=(), initializer="zeros", dtype=cdap_dtype)
-    
+        self.n_valid_instances = self.add_weight(shape=(), initializer="zeros", dtype=cdap_dtype)
+
+
+    def build(self, input_shape):
+        super().build(input_shape)
+
+
     @tf.function(input_signature=((
         tf.TensorSpec(shape=[None, 2], dtype=cdap_dtype),
         tf.TensorSpec(shape=MP_INPUT_SHAPE, dtype=cdap_dtype)
@@ -145,5 +150,6 @@ class CornerDetectionAveragePrecision(keras.metrics.Metric):
     def reset_state(self):
         self.mAP.assign(0.)
         self.mLE.assign(0.)
+        self.n_valid_instances.assign(0.)
         self.batch_recalls.assign(tf.zeros_like(detection_confidences))
         self.batch_precisions.assign(tf.zeros_like(detection_confidences)) 
