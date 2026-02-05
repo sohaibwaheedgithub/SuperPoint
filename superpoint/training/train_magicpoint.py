@@ -12,13 +12,11 @@ from superpoint.utils.tensorboard import create_tensorboard_writer
 from superpoint.utils.reproducibility import set_global_determinism
 from superpoint.datasets.magicpoint_dataset import MagicPointDataset
 from superpoint.configs.magicpoint_config import load_magicpoint_config
+from superpoint.callbacks.fit_logger import FitLogger
 from superpoint.callbacks.train_state_checkpoint import TrainingStateCheckpoint
 from superpoint.metrics.corner_detection_average_precision import CornerDetectionAveragePrecision
             
-
-
-
-
+            
 def main(config_path: str):
     # 1. Load configuration
     cfg = load_magicpoint_config(config_path)
@@ -32,6 +30,12 @@ def main(config_path: str):
     # 3. Setup logging
     logger = setup_logger(exp_dir)
     tb_writer = create_tensorboard_writer(exp_dir)
+    # Route TensorFlow logs to the same handlers as our logger
+    tf_logger = tf.get_logger()
+    tf_logger.setLevel(logger.level)
+    for handler in logger.handlers:
+        if handler not in tf_logger.handlers:
+            tf_logger.addHandler(handler)
 
     # 4. Initialize determinism
     set_global_determinism(
@@ -141,7 +145,7 @@ def main(config_path: str):
                 epochs=1,
                 steps_per_epoch=cfg.training.steps_per_epoch,
                 validation_data=valid_dataset,
-                callbacks=[state_ckpt_cb],
+                callbacks=[state_ckpt_cb, FitLogger(logger, context=Path(train_tfrecord).name)],
                 verbose=1,
             )
         
