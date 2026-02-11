@@ -7,6 +7,7 @@ class FitLogger(keras.callbacks.Callback):
         self._logger = logger
         self.epoch = epoch
 
+
     def on_epoch_end(self, epoch, logs=None):
         logs = logs or {}
         metrics = " ".join([f"{k}={v:.6f}" for k, v in logs.items()])

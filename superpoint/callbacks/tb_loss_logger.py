@@ -3,9 +3,10 @@ import tensorflow as tf
 
 
 class TensorboardLossLogger(keras.callbacks.Callback):
-    def __init__(self, writer):
+    def __init__(self, writer, epoch):
         super().__init__()
         self._writer = writer
+        self.epoch = epoch 
 
     def on_epoch_end(self, epoch, logs=None):
         logs = logs or {}
@@ -15,7 +16,7 @@ class TensorboardLossLogger(keras.callbacks.Callback):
             return
         with self._writer.as_default():
             if loss is not None:
-                tf.summary.scalar("loss", loss, step=epoch)
+                tf.summary.scalar("loss", loss, step=self.epoch)
             if val_loss is not None:
-                tf.summary.scalar("val_loss", val_loss, step=epoch)
+                tf.summary.scalar("val_loss", val_loss, step=self.epoch)
             self._writer.flush()
