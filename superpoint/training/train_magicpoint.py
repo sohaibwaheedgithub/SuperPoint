@@ -144,7 +144,7 @@ def main(config_path: str):
                 train_dataset,
                 epochs=1,
                 steps_per_epoch=cfg.training.steps_per_epoch,
-                #validation_data=valid_dataset,
+                validation_data=valid_dataset,
                 callbacks=[
                     state_ckpt_cb,
                     FitLogger(logger, epoch=state_ckpt_cb.epoch_start),
