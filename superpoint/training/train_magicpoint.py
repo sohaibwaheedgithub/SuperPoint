@@ -148,7 +148,7 @@ def main(config_path: str):
                 callbacks=[
                     state_ckpt_cb,
                     FitLogger(logger, epoch=state_ckpt_cb.epoch_start),
-                    #TensorboardLossLogger(tb_writer),
+                    TensorboardLossLogger(tb_writer, epoch=state_ckpt_cb.epoch_start),
                 ],
                 verbose=1,
             )
