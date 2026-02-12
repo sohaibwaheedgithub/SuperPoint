@@ -12,9 +12,17 @@ class TrainingImageLogger(keras.callbacks.Callback):
 
     def on_epoch_end(self, epoch, logs=None):
         outputs = self.model(self._images, training=False)
+        images = tf.clip_by_value(self._images, 0.0, 1.0)
         heatmaps = tf.clip_by_value(outputs["heatmap"], 0.0, 1.0)
 
         with self._writer.as_default():
+            tf.summary.image(
+                "ground_truths/images",
+                images,
+                step=self._epoch,
+                max_outputs=self._max_outputs,
+            )
+
             tf.summary.image(
                 "predictions/heatmap",
                 heatmaps,
