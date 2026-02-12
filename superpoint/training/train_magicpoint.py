@@ -13,7 +13,8 @@ from superpoint.utils.reproducibility import set_global_determinism
 from superpoint.datasets.magicpoint_dataset import MagicPointDataset
 from superpoint.configs.magicpoint_config import load_magicpoint_config
 from superpoint.callbacks.fit_logger import FitLogger
-from superpoint.callbacks.tb_loss_logger import TensorboardLossLogger
+from superpoint.callbacks.training_image_logger import TrainingImageLogger
+from superpoint.callbacks.training_scalars_logger import TrainingScalarsLogger
 from superpoint.callbacks.train_state_checkpoint import TrainingStateCheckpoint
             
 
@@ -121,6 +122,7 @@ def main(config_path: str):
         valid_tfrecords,
         batch_size=cfg.training.batch_size,
     )
+    vis_batch = next(iter(valid_dataset.take(1)))
     
     logger.info("Validation Dataset Built")
     
@@ -145,10 +147,16 @@ def main(config_path: str):
                 epochs=1,
                 steps_per_epoch=cfg.training.steps_per_epoch,
                 validation_data=valid_dataset,
+                validation_steps=1,
                 callbacks=[
                     state_ckpt_cb,
                     FitLogger(logger, epoch=state_ckpt_cb.epoch_start),
-                    TensorboardLossLogger(tb_writer, epoch=state_ckpt_cb.epoch_start),
+                    TrainingScalarsLogger(tb_writer, epoch=state_ckpt_cb.epoch_start),
+                    TrainingImageLogger(
+                        tb_writer,
+                        images=vis_batch["image"],
+                        epoch=state_ckpt_cb.epoch_start,
+                    ),
                 ],
                 verbose=1,
             )
