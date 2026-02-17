@@ -123,6 +123,14 @@ def main(config_path: str):
         batch_size=cfg.training.batch_size,
     )
     vis_batch = next(iter(valid_dataset.take(1)))
+    with tb_writer.as_default():
+        tf.summary.image(
+            "visuals/images",
+            tf.cast(vis_batch["image"], tf.uint8),
+            step=0,
+            max_outputs=4,
+        )
+        tb_writer.flush()
     
     logger.info("Validation Dataset Built")
     
