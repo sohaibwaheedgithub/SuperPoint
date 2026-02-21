@@ -59,13 +59,13 @@ class MagicPoint(keras.Model):
 
         grads = tape.gradient(loss, self.trainable_variables)
         self.optimizer.apply_gradients(zip(grads, self.trainable_variables))
-        
 
 
         encoder_grads, decoder_grads = [], []
         encoder_weights, decoder_weights = [], []
 
         for grad, var in zip(grads, self.trainable_variables):
+            tf.print("Varname: ", var.name)
             if "shared_encoder" in var.name:
                 encoder_weights.append(var)
                 if grad is not None:
@@ -74,6 +74,7 @@ class MagicPoint(keras.Model):
                 decoder_weights.append(var)
                 if grad is not None:
                     decoder_grads.append(grad)
+
 
         self.cdap_metric.update_state(data["points"], outputs["heatmap"])
 
