@@ -69,11 +69,8 @@ class MagicPoint(keras.Model):
 
         for grad, var in zip(grads, self.trainable_variables):
             var_path = getattr(var, "path", var.name)
-            is_encoder = var_path.startswith("shared_encoder/")
-            is_decoder = var_path.startswith("decoder/")
-
-            if not (is_encoder or is_decoder):
-                continue
+            is_encoder = "shared_encoder" in var_path
+            is_decoder = "decoder" in var_path
 
             is_kernel = var_path.endswith("/kernel")
             is_bias = var_path.endswith("/bias")

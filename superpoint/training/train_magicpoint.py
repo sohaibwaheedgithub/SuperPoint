@@ -121,6 +121,7 @@ def main(config_path: str):
     valid_dataset = dataset_builder.build_dataset(
         valid_tfrecords,
         batch_size=cfg.training.batch_size,
+        cache=False
     )
     vis_batch = next(iter(valid_dataset.take(1)))
     with tb_writer.as_default():
