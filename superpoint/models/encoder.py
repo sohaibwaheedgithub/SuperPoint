@@ -11,7 +11,7 @@ class SEConvBlock(keras.layers.Layer):
             kernel_size=3, 
             padding="same", 
             activation="relu", 
-            kernel_initializer="he_normal"
+            kernel_initializer="he_normal",
         )  
         self.batchNorm_1 = keras.layers.BatchNormalization()
         self.conv2d_2 = keras.layers.Conv2D(
