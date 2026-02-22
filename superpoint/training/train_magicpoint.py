@@ -14,6 +14,7 @@ from superpoint.datasets.magicpoint_dataset import MagicPointDataset
 from superpoint.configs.magicpoint_config import load_magicpoint_config
 from superpoint.callbacks.fit_logger import FitLogger
 from superpoint.callbacks.training_image_logger import TrainingImageLogger
+from superpoint.callbacks.training_histogram_logger import TrainingHistogramLogger
 from superpoint.callbacks.training_scalars_logger import TrainingScalarsLogger
 from superpoint.callbacks.train_state_checkpoint import TrainingStateCheckpoint
             
@@ -161,6 +162,11 @@ def main(config_path: str):
                     state_ckpt_cb,
                     FitLogger(logger, epoch=state_ckpt_cb.epoch_start),
                     TrainingScalarsLogger(tb_writer, epoch=state_ckpt_cb.epoch_start),
+                    TrainingHistogramLogger(
+                        tb_writer,
+                        epoch=state_ckpt_cb.epoch_start,
+                        every_n_epochs=1,
+                    ),
                     TrainingImageLogger(
                         tb_writer,
                         images=vis_batch["image"],
