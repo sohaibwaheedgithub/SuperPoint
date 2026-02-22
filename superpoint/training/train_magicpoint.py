@@ -164,6 +164,7 @@ def main(config_path: str):
                     TrainingScalarsLogger(tb_writer, epoch=state_ckpt_cb.epoch_start),
                     TrainingHistogramLogger(
                         tb_writer,
+                        images=vis_batch["image"],
                         epoch=state_ckpt_cb.epoch_start
                     ),
                     TrainingImageLogger(
