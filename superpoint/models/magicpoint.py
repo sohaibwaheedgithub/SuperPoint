@@ -147,6 +147,9 @@ class MagicPoint(keras.Model):
         decoder_bias_weight_norm = tf.linalg.global_norm(decoder_bias_weights) if decoder_bias_weights else tf.constant(0.0, tf.float32)
         decoder_gamma_weight_norm = tf.linalg.global_norm(decoder_gamma_weights) if decoder_gamma_weights else tf.constant(0.0, tf.float32)
         decoder_beta_weight_norm = tf.linalg.global_norm(decoder_beta_weights) if decoder_beta_weights else tf.constant(0.0, tf.float32)
+        eps = tf.constant(1e-12, tf.float32)
+        encoder_relative_update = encoder_grad_norm / (encoder_weight_norm + eps)
+        decoder_relative_update = decoder_grad_norm / (decoder_weight_norm + eps)
 
         # Update Corner Detection Average Precision Metric
         self.cdap_metric.update_state(data["points"], outputs["heatmap"])
@@ -166,6 +169,8 @@ class MagicPoint(keras.Model):
             "grads/decoder_beta_norm": decoder_beta_grad_norm,
             "weights/encoder_norm": encoder_weight_norm,
             "weights/decoder_norm": decoder_weight_norm,
+            "updates/encoder_relative": encoder_relative_update,
+            "updates/decoder_relative": decoder_relative_update,
             "weights/encoder_kernel_norm": encoder_kernel_weight_norm,
             "weights/encoder_bias_norm": encoder_bias_weight_norm,
             "weights/encoder_gamma_norm": encoder_gamma_weight_norm,
