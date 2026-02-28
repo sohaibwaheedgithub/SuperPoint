@@ -138,7 +138,9 @@ class CornerDetectionAveragePrecision(keras.metrics.Metric):
     def result(self):
         return {
             "mAP": self.mAP,
-            "mLE": self.mLE
+            "mLE": self.mLE,
+            "recalls": self.batch_recalls,
+            "precisions": self.batch_precisions
         }
    
         

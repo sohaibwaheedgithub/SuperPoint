@@ -4,7 +4,7 @@ import keras
 import random
 import tensorflow as tf
 from pathlib import Path
-from superpoint.constants import MP_INPUT_SHAPE
+from superpoint.constants import MP_INPUT_SHAPE, detection_confidences
 from superpoint.utils.logging import setup_logger
 from superpoint.models.magicpoint import MagicPoint
 from superpoint.utils.checkpointing import load_state
@@ -15,6 +15,7 @@ from superpoint.configs.magicpoint_config import load_magicpoint_config
 from superpoint.callbacks.fit_logger import FitLogger
 from superpoint.callbacks.training_image_logger import TrainingImageLogger
 from superpoint.callbacks.training_histogram_logger import TrainingHistogramLogger
+from superpoint.callbacks.training_pr_curve_logger import TrainingPRCurveLogger
 from superpoint.callbacks.training_scalars_logger import TrainingScalarsLogger
 from superpoint.callbacks.train_state_checkpoint import TrainingStateCheckpoint
             
@@ -172,6 +173,11 @@ def main(config_path: str):
                     reduce_lr_cb,
                     FitLogger(logger, epoch=state_ckpt_cb.epoch_start),
                     TrainingScalarsLogger(tb_writer, epoch=state_ckpt_cb.epoch_start),
+                    TrainingPRCurveLogger(
+                        tb_writer,
+                        confidences=detection_confidences,
+                        epoch=state_ckpt_cb.epoch_start,
+                    ),
                     TrainingHistogramLogger(
                         tb_writer,
                         images=vis_batch["image"],
