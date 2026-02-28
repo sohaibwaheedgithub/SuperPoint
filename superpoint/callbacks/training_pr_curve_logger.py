@@ -13,6 +13,14 @@ class TrainingPRCurveLogger(keras.callbacks.Callback):
 
         precisions = self.model.cdap_metric.batch_precisions
         recalls = self.model.cdap_metric.batch_recalls
+        sort_idx = tf.argsort(recalls)
+        recalls_sorted = tf.gather(recalls, sort_idx)
+        precisions_sorted = tf.gather(precisions, sort_idx)
+        pr_auc = tf.reduce_sum(
+            (recalls_sorted[1:] - recalls_sorted[:-1])
+            * (precisions_sorted[1:] + precisions_sorted[:-1])
+            * 0.5
+        )
 
         with self._writer.as_default():
             for i, conf in enumerate(self._confidences):
@@ -26,4 +34,5 @@ class TrainingPRCurveLogger(keras.callbacks.Callback):
                     recalls[i],
                     step=self._epoch,
                 )
+            tf.summary.scalar("pr_curve/auc", pr_auc, step=self._epoch)
             self._writer.flush()
