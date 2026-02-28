@@ -20,10 +20,10 @@ def setup_logger(log_dir: Path) -> logging.Logger:
     fh.setFormatter(formatter)
 
     # Console handler
-    ch = logging.StreamHandler(sys.stdout)
-    ch.setFormatter(formatter)
+    # ch = logging.StreamHandler(sys.stdout)
+    # ch.setFormatter(formatter)
 
     logger.addHandler(fh)
-    logger.addHandler(ch)
+    #logger.addHandler(ch)
 
     return logger
