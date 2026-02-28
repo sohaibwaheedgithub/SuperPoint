@@ -186,8 +186,12 @@ def main(config_path: str):
                     TrainingImageLogger(
                         tb_writer,
                         images=vis_batch["image"],
+                        points=vis_batch["points"],
                         epoch=state_ckpt_cb.epoch_start,
                     ),
+                    
+
+
                 ],
                 verbose=1,
             )
