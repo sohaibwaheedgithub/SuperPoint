@@ -15,4 +15,7 @@ class TrainingScalarsLogger(keras.callbacks.Callback):
             for key, value in logs.items():
                 tf.summary.scalar(key, value, step=self._epoch)
 
+            lr_value = tf.convert_to_tensor(self.model.optimizer.learning_rate)
+            tf.summary.scalar("learning_rate", lr_value, step=self._epoch)
+
             self._writer.flush()

@@ -109,6 +109,15 @@ def main(config_path: str):
         monitor=cfg.checkpointing.monitor,
         mode=cfg.checkpointing.mode,
     )
+    
+    reduce_lr_cb = keras.callbacks.ReduceLROnPlateau(
+        monitor="val_loss",
+        factor=0.5,
+        patience=3,
+        min_lr=1e-6,
+        cooldown=1,
+        verbose=1,
+    )
 
     dataset_builder = MagicPointDataset()
     
@@ -160,6 +169,7 @@ def main(config_path: str):
                 validation_steps=1,
                 callbacks=[
                     state_ckpt_cb,
+                    reduce_lr_cb,
                     FitLogger(logger, epoch=state_ckpt_cb.epoch_start),
                     TrainingScalarsLogger(tb_writer, epoch=state_ckpt_cb.epoch_start),
                     TrainingHistogramLogger(
