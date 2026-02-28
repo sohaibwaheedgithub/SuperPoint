@@ -10,9 +10,9 @@ class TrainingPRCurveLogger(keras.callbacks.Callback):
         self._epoch = epoch
 
     def on_epoch_end(self, epoch, logs=None):
-        metric_result = self.model.cdap_metric.result()
-        precisions = metric_result["precisions"]
-        recalls = metric_result["recalls"]
+
+        precisions = self.model.cdap_metric.batch_precisions
+        recalls = self.model.cdap_metric.batch_recalls
 
         with self._writer.as_default():
             for i, conf in enumerate(self._confidences):
