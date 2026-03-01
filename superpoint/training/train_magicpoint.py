@@ -132,7 +132,7 @@ def main(config_path: str):
     valid_dataset = dataset_builder.build_dataset(
         valid_tfrecords,
         batch_size=cfg.training.batch_size,
-        cache=False
+        cache=True
     )
     vis_batch = next(iter(valid_dataset.take(1)))
     with tb_writer.as_default():
@@ -167,7 +167,7 @@ def main(config_path: str):
                 epochs=1,
                 steps_per_epoch=cfg.training.steps_per_epoch,
                 validation_data=valid_dataset,
-                validation_steps=1,
+                validation_steps=450,
                 callbacks=[
                     state_ckpt_cb,
                     reduce_lr_cb,
@@ -188,10 +188,7 @@ def main(config_path: str):
                         images=vis_batch["image"],
                         points=vis_batch["points"],
                         epoch=state_ckpt_cb.epoch_start,
-                    ),
-                    
-
-
+                    )
                 ],
                 verbose=1,
             )

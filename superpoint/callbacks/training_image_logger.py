@@ -13,6 +13,7 @@ class TrainingImageLogger(keras.callbacks.Callback):
         self._max_outputs = max_outputs
         self._pred_threshold = pred_threshold
 
+
     def _draw_points(self, image_rgb, points, color, radius=2):
         h, w, _ = image_rgb.shape
         for y, x in points.astype(np.int32):
@@ -22,6 +23,7 @@ class TrainingImageLogger(keras.callbacks.Callback):
             x1 = min(w, x + radius + 1)
             image_rgb[y0:y1, x0:x1] = color
         return image_rgb
+
 
     def on_epoch_end(self, epoch, logs=None):
         outputs = self.model(self._images, training=False)

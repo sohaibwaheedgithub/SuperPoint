@@ -1,5 +1,5 @@
 MP_INPUT_SHAPE=[240, 320, 1]  # MP -> Magic Point
-MP_BATCH_SIZE=2
+MP_BATCH_SIZE=32
 SP_INPUT_SHAPE=[240, 320, 1]  # SP -> Super Point
 
 import tensorflow as tf
