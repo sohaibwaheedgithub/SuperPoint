@@ -7,7 +7,7 @@ def setup_logger(log_dir: Path) -> logging.Logger:
     log_dir.mkdir(parents=True, exist_ok=True)
     log_file = log_dir / "train.log"
 
-    logger = logging.getLogger("magicpoint")
+    logger = logging.getLogger("superpoint")
     logger.setLevel(logging.INFO)
     logger.propagate = False
 

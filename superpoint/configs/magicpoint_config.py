@@ -1,5 +1,5 @@
-from dataclasses import dataclass
 import yaml
+from dataclasses import dataclass
 
 
 @dataclass
