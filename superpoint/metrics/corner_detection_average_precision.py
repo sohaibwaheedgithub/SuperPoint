@@ -28,7 +28,7 @@ class CornerDetectionAveragePrecision(keras.metrics.Metric):
     @tf.function(input_signature=((
         tf.TensorSpec(shape=[None, 2], dtype=cdap_dtype),
         tf.TensorSpec(shape=MP_INPUT_SHAPE, dtype=cdap_dtype)
-    ),))
+    ),), jit_compile=True)
     def corner_detection_precision(self, instance):        
         # Remove padded [0, 0] ground-truth points added by padded_batch;
         # this also excludes images with no valid GT points, where precision and recall are undefined.
@@ -115,7 +115,7 @@ class CornerDetectionAveragePrecision(keras.metrics.Metric):
     @tf.function(input_signature=(
         tf.TensorSpec(shape=[None, None, 2], dtype=cdap_dtype),
         tf.TensorSpec(shape=[None] + MP_INPUT_SHAPE, dtype=cdap_dtype)  
-    ))
+    ), jit_compile=True)
     def update_state(self, y_true, y_pred, sample_weight=None):
         localization_errors = tf.map_fn(
             fn=self.corner_detection_precision,

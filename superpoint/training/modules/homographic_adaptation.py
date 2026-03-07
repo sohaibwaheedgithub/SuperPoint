@@ -190,12 +190,12 @@ class HomographicAdapter:
         )'''
         
         transformed_img = self.apply_homography(image[tf.newaxis, ...], H)
-        
             
         return transformed_img, H, H_inverse
     
     @tf.function(input_signature=(tf.TensorSpec(shape=[None, 2], dtype=tf.float32),), jit_compile=True)    
     def generateBins(self, points):
+        points = tf.round(points)
         # To prepare all possible set of coordinates of points in the image
         x = range(0, MP_INPUT_SHAPE[0])
         y = range(0, MP_INPUT_SHAPE[1])
@@ -267,7 +267,9 @@ class HomographicAdapter:
             )'''
             
             transformed_label = self.apply_homography(labels[tf.newaxis, ...], H)[0, ..., 0]
-            transformed_bin = self.generateBins(tf.cast(tf.sparse.from_dense(transformed_label).indices, tf.float32))
+            transformed_bin = self.generateBins(
+                tf.cast(tf.sparse.from_dense(transformed_label).indices, tf.float32)
+            )
 
             # Store the result
             pseudo_labels = pseudo_labels.write(i, labels)
@@ -308,10 +310,12 @@ class HomographicAdapter:
             
             # Run inference on transformed image using current SuperPoint model
             # Use only the interest point detection part (ipdPostProcessedOutput)
-            output = tf.squeeze(
-                self.interest_point_model(transformed_img, training=False)["ipdPostProcessedOutput"], 
-                axis=0
-            )
+            # output = tf.squeeze(
+            #     self.interest_point_model(transformed_img, training=False)["detector_post_processor"], 
+            #     axis=0
+            # )
+
+            output = self.interest_point_model(transformed_img, training=False)["detector_post_processor"]
             
             # Unwarp the detection back to original image space
             '''unwarped_output = tf.numpy_function(
@@ -327,8 +331,8 @@ class HomographicAdapter:
                 tf.float32
             )'''
         
-            unwarped_output = self.apply_homography(output[tf.newaxis, ...], H_inverse)[0, ..., 0]
-
+            #unwarped_output = self.apply_homography(output[tf.newaxis, ...], H_inverse)[0, ..., 0]
+            unwarped_output = self.apply_homography(output, H_inverse)[0, ..., 0]
             
             # Store unwarped output
             unwarped_outputs = unwarped_outputs.write(i, unwarped_output)
