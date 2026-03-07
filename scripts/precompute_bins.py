@@ -47,7 +47,7 @@ def parse_example(example):
     # But rescaled points have to be saved in disk as bins generation is dependant on points
     parsed = tf.io.parse_single_example(example, INPUT_FEATURES)
     image = parsed["image"]                                                  
-    points = tf.io.parse_tensor(parsed["points"], out_type=tf.float32)  
+    points = tf.io.parse_tensor(parsed["points"], out_type=tf.float32) / 2    # Since some records were processed incorrectly, the ones with size around 155..... Kbs, so need to divide their points first by 2
     scale_y = MP_INPUT_SHAPE[0] / 120
     scale_x = MP_INPUT_SHAPE[1] / 160
     points *= [scale_y, scale_x]                                    

@@ -1,8 +1,8 @@
 import keras
 import tensorflow as tf
-from superpoint.models.encoder import SharedEncoder
-from superpoint.models.decoder import Decoder
-from superpoint.models.post_processor import DetectorPostProcessor, DescriptorPostProcessor
+from superpoint.models.components.encoder import SharedEncoder
+from superpoint.models.components.decoder import Decoder
+from superpoint.models.components.post_processor import DetectorPostProcessor, DescriptorPostProcessor
 from superpoint.metrics.corner_detection_average_precision import CornerDetectionAveragePrecision
 
 
@@ -20,29 +20,25 @@ class SuperPoint(keras.Model):
         self.descriptor_decoder = Decoder(256, name="descriptor_decoder")
         self.descriptor_post = DescriptorPostProcessor(name="descriptor_post_processor")
 
-        self.cdap_metric = CornerDetectionAveragePrecision(
-            name="corner_detection_average_precision"
-        )
-
         self.mean = tf.constant(mean, dtype=tf.float32)
         self.variance = tf.constant(variance, dtype=tf.float32)
 
-    @property
-    def metrics(self):
-        return [self.cdap_metric]
 
 
     def call(self, inputs, training=False):
         x = (inputs - self.mean) / tf.sqrt(self.variance)
-        encoder_features = self.encoder(x, training=training)
-        logits = self.decoder(encoder_features, training=training)
-        heatmap = self.post(logits)
+        encoder_features = self.shared_encoder(x, training=training)
+        
+        detector_logits = self.detector_decoder(encoder_features, training=training)
+        detector_heatmap = self.detector_post(detector_logits)
+
+        descriptor_logits = self.descriptor_decoder(encoder_features, training=training)
 
         return {
-            "bins": logits,
             "encoder_features": encoder_features,
-            "detector_logits": logits,
-            "heatmap": heatmap,
+            "detector_logits": detector_logits,
+            "detector_heatmap": detector_heatmap,
+            "descriptor_logits": descriptor_logits
         }
 
 
