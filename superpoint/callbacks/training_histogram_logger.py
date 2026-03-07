@@ -25,7 +25,7 @@ class TrainingHistogramLogger(keras.callbacks.Callback):
             )
             tf.summary.histogram(
                 "activations/decoder_logits",
-                outputs["detector_logits"],
+                outputs["bins"],
                 step=self._epoch,
             )
             tf.summary.histogram(

@@ -3,16 +3,17 @@ import tensorflow as tf
 
 
 class TrainingPRCurveLogger(keras.callbacks.Callback):
-    def __init__(self, writer, confidences, epoch):
+    def __init__(self, writer, confidences, epoch, cdap_metric):
         super().__init__()
         self._writer = writer
         self._confidences = [float(c) for c in tf.reshape(confidences, [-1])]
         self._epoch = epoch
+        self._cdap_metric = cdap_metric
 
     def on_epoch_end(self, epoch, logs=None):
 
-        precisions = self.model.cdap_metric.batch_precisions
-        recalls = self.model.cdap_metric.batch_recalls
+        precisions = self._cdap_metric.batch_precisions
+        recalls = self._cdap_metric.batch_recalls
         sort_idx = tf.argsort(recalls)
         recalls_sorted = tf.gather(recalls, sort_idx)
         precisions_sorted = tf.gather(precisions, sort_idx)

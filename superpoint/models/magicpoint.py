@@ -16,16 +16,9 @@ class MagicPoint(keras.Model):
         self.encoder = SharedEncoder(name="shared_encoder")
         self.decoder = Decoder(65, name="detector_decoder")
         self.post = DetectorPostProcessor(name="detector_post_processor")
-        self.cdap_metric = CornerDetectionAveragePrecision(
-            name="corner_detection_average_precision"
-        )
 
         self.mean = tf.constant(mean, dtype=tf.float32)
         self.variance = tf.constant(variance, dtype=tf.float32)
-
-    @property
-    def metrics(self):
-        return [self.cdap_metric]
 
 
     def call(self, inputs, training=False):
@@ -37,7 +30,6 @@ class MagicPoint(keras.Model):
         return {
             "bins": logits,
             "encoder_features": encoder_features,
-            "detector_logits": logits,
             "heatmap": heatmap,
         }
 
@@ -56,14 +48,7 @@ class MagicPoint(keras.Model):
         grads = tape.gradient(loss, self.trainable_variables)
         self.optimizer.apply_gradients(zip(grads, self.trainable_variables))
         
-        
-        # Update Corner Detection Average Precision Metric
-        self.cdap_metric.update_state(data["points"], outputs["heatmap"])
-        
-        return {
-            "loss": loss,
-            **self.cdap_metric.result()
-        }
+        return {"loss": loss}
 
 
 
@@ -76,9 +61,4 @@ class MagicPoint(keras.Model):
             sample_weight=data["sample_weights"],
         )
         
-        self.cdap_metric.update_state(data["points"], outputs["heatmap"])
-        
-        return {
-            "loss": loss,
-            **self.cdap_metric.result()
-        }
+        return {"loss": loss}

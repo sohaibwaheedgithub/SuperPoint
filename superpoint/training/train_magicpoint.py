@@ -18,6 +18,7 @@ from superpoint.callbacks.training_histogram_logger import TrainingHistogramLogg
 from superpoint.callbacks.training_pr_curve_logger import TrainingPRCurveLogger
 from superpoint.callbacks.training_scalars_logger import TrainingScalarsLogger
 from superpoint.callbacks.train_state_checkpoint import TrainingStateCheckpoint
+from superpoint.metrics.corner_detection_average_precision import CornerDetectionAveragePrecision
             
 
 def main(config_path: str):
@@ -73,7 +74,13 @@ def main(config_path: str):
         loss=keras.losses.SparseCategoricalCrossentropy(from_logits=True),
     )
     logger.info("Compilation Completed")
+
+
+    logger.info("Initializing Corner Detection Average Precision Metric")
     
+    cdap_metric = CornerDetectionAveragePrecision(
+        name="corner_detection_average_precision"
+    )
 
     ckpt_dir = exp_dir / "checkpoints"
     ckpt_dir.mkdir(parents=True, exist_ok=True)
@@ -173,11 +180,6 @@ def main(config_path: str):
                     reduce_lr_cb,
                     FitLogger(logger, epoch=state_ckpt_cb.epoch_start),
                     TrainingScalarsLogger(tb_writer, epoch=state_ckpt_cb.epoch_start),
-                    TrainingPRCurveLogger(
-                        tb_writer,
-                        confidences=detection_confidences,
-                        epoch=state_ckpt_cb.epoch_start,
-                    ),
                     TrainingHistogramLogger(
                         tb_writer,
                         images=vis_batch["image"],
@@ -192,6 +194,54 @@ def main(config_path: str):
                 ],
                 verbose=1,
             )
+
+            # Writing cdap_metric in tensorboard
+
+            train_batch = next(iter(train_dataset.take(1)))
+            train_outputs = model(train_batch["image"], training=False)
+            
+            valid_batch = vis_batch
+            valid_outputs = model(valid_batch["image"], training=False)
+
+            with tb_writer.as_default():
+                cdap_metric.update_state(train_batch["points"], train_outputs["heatmap"])
+                for key, value in cdap_metric.result().items():
+                    tf.summary.scalar(key, value, step=state_ckpt_cb.epoch_start)
+
+                # Writing PR Curve
+                precisions = cdap_metric.batch_precisions
+                recalls = cdap_metric.batch_recalls
+                sort_idx = tf.argsort(recalls)
+                recalls_sorted = tf.gather(recalls, sort_idx)
+                precisions_sorted = tf.gather(precisions, sort_idx)
+                pr_auc = tf.reduce_sum(
+                    (recalls_sorted[1:] - recalls_sorted[:-1])
+                    * (precisions_sorted[1:] + precisions_sorted[:-1])
+                    * 0.5
+                )
+
+                for i, conf in enumerate(detection_confidences):
+                    tf.summary.scalar(
+                        f"pr_curve/precision_at_{conf:.2f}",
+                        precisions[i],
+                        step=state_ckpt_cb.epoch_start,
+                    )
+                    tf.summary.scalar(
+                        f"pr_curve/recall_at_{conf:.2f}",
+                        recalls[i],
+                        step=state_ckpt_cb.epoch_start,
+                    )
+                tf.summary.scalar("pr_curve/auc", pr_auc, step=state_ckpt_cb.epoch_start)
+
+                cdap_metric.reset_state()
+
+
+                # Writing Validation Cdap Metric
+                cdap_metric.update_state(valid_batch["points"], valid_outputs["heatmap"])
+                for key, value in cdap_metric.result().items():
+                    tf.summary.scalar("val_" + key, value, step=state_ckpt_cb.epoch_start)
+                cdap_metric.reset_state()
+            
         
         state_ckpt_cb.shard += 1
         state_ckpt_cb.tfrecord_start = 0
