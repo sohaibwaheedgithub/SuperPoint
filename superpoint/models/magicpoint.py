@@ -17,8 +17,18 @@ class MagicPoint(keras.Model):
         self.decoder = Decoder(65, name="detector_decoder")
         self.post = DetectorPostProcessor(name="detector_post_processor")
 
+        self.cdap_metric = CornerDetectionAveragePrecision(
+            name="corner_detection_average_precision"
+        )
+        self.loss_tracker = keras.metrics.Mean(name="loss")
+
         self.mean = tf.constant(mean, dtype=tf.float32)
         self.variance = tf.constant(variance, dtype=tf.float32)
+
+
+    @property
+    def metrics(self):
+        return [self.loss_tracker, self.cdap_metric]
 
 
     def call(self, inputs, training=False):
@@ -28,8 +38,8 @@ class MagicPoint(keras.Model):
         heatmap = self.post(logits)
 
         return {
-            "bins": logits,
             "encoder_features": encoder_features,
+            "bins": logits,
             "heatmap": heatmap,
         }
 
@@ -47,18 +57,26 @@ class MagicPoint(keras.Model):
 
         grads = tape.gradient(loss, self.trainable_variables)
         self.optimizer.apply_gradients(zip(grads, self.trainable_variables))
-        
-        return {"loss": loss}
+
+        self.loss_tracker.update_state(loss)
+        self.cdap_metric.update_state(data["points"], outputs["heatmap"])
+
+        return {
+            "loss": self.loss_tracker.result(),
+            **self.cdap_metric.result()
+        }
 
 
 
     def test_step(self, data):
         
-        outputs = self(data["image"], training=True)
+        outputs = self(data["image"], training=False)
         loss = self.compute_loss(
             y=data["bins"],
             y_pred=outputs["bins"],
             sample_weight=data["sample_weights"],
         )
-        
-        return {"loss": loss}
+
+        self.loss_tracker.update_state(loss)
+
+        return {"loss": self.loss_tracker.result()}
