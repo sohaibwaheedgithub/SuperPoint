@@ -79,13 +79,9 @@ class MagicPoint(keras.Model):
         for metric in self.metrics:
             if metric.name == "loss":
                 metric.update_state(loss)
-                return_dict[f"val_{metric.name}"] = metric.result()
+                return_dict[metric.name] = metric.result()
 
         self.cdap_metric.update_state(data["points"], outputs["heatmap"])
-        cdap_result = self.cdap_metric.result()
-        return_dict.update({
-            "val_mAP": cdap_result["mAP"],
-            "val_mLE": cdap_result["mLE"]
-        })
+        return_dict.update(self.cdap_metric.result())
 
         return return_dict
