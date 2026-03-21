@@ -20,15 +20,10 @@ class MagicPoint(keras.Model):
         self.cdap_metric = CornerDetectionAveragePrecision(
             name="corner_detection_average_precision"
         )
-        self.loss_tracker = keras.metrics.Mean(name="loss")
 
         self.mean = tf.constant(mean, dtype=tf.float32)
         self.variance = tf.constant(variance, dtype=tf.float32)
 
-
-    @property
-    def metrics(self):
-        return [self.loss_tracker, self.cdap_metric]
 
 
     def call(self, inputs, training=False):
@@ -57,14 +52,17 @@ class MagicPoint(keras.Model):
 
         grads = tape.gradient(loss, self.trainable_variables)
         self.optimizer.apply_gradients(zip(grads, self.trainable_variables))
+        
+        return_dict = {}
+        for metric in self.metrics:
+            if metric.name == "loss":
+                metric.update_state(loss)
+                return_dict[metric.name] = metric.result()
 
-        self.loss_tracker.update_state(loss)
         self.cdap_metric.update_state(data["points"], outputs["heatmap"])
+        return_dict.update(self.cdap_metric.result())
 
-        return {
-            "loss": self.loss_tracker.result(),
-            **self.cdap_metric.result()
-        }
+        return return_dict
 
 
 
@@ -77,6 +75,17 @@ class MagicPoint(keras.Model):
             sample_weight=data["sample_weights"],
         )
 
-        self.loss_tracker.update_state(loss)
+        return_dict = {}
+        for metric in self.metrics:
+            if metric.name == "loss":
+                metric.update_state(loss)
+                return_dict[f"val_{metric.name}"] = metric.result()
 
-        return {"loss": self.loss_tracker.result()}
+        self.cdap_metric.update_state(data["points"], outputs["heatmap"])
+        cdap_result = self.cdap_metric.result()
+        return_dict.update({
+            "val_mAP": cdap_result["mAP"],
+            "val_mLE": cdap_result["mLE"]
+        })
+
+        return return_dict
