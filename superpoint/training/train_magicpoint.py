@@ -4,7 +4,7 @@ import keras
 import random
 import tensorflow as tf
 from pathlib import Path
-from superpoint.constants import MP_INPUT_SHAPE, detection_confidences
+from superpoint.constants import SP_INPUT_SHAPE, detection_confidences
 from superpoint.utils.logging import setup_logger
 from superpoint.models.magicpoint import MagicPoint
 from superpoint.utils.checkpointing import load_state
@@ -60,7 +60,7 @@ def main(config_path: str):
         variance=cfg.model.variance,
     )
     
-    model(tf.zeros((cfg.training.batch_size, *MP_INPUT_SHAPE)))
+    model(tf.zeros((cfg.training.batch_size, *SP_INPUT_SHAPE)))
 
     logger.info("Model built successfully")
 
@@ -105,6 +105,18 @@ def main(config_path: str):
         best_ckpt_manager = tf.train.CheckpointManager(
             ckpt, ckpt_dir / "best", max_to_keep=1
         )
+
+    if hasattr(model.optimizer, "build"):
+        model.optimizer.build(model.trainable_variables)
+
+    latest_checkpoint = (
+        last_ckpt_manager.latest_checkpoint if last_ckpt_manager else None
+    )
+    if latest_checkpoint:
+        ckpt.restore(latest_checkpoint).expect_partial()
+        logger.info(f"Restored training checkpoint: {latest_checkpoint}")
+    else:
+        logger.info("No previous training checkpoint found. Starting fresh.")
 
     state_ckpt_cb = TrainingStateCheckpoint(
         ckpt=ckpt,
@@ -243,8 +255,7 @@ def main(config_path: str):
                 cdap_metric.reset_state()
             
         
-        state_ckpt_cb.shard += 1
-        state_ckpt_cb.tfrecord_start = 0
+        state_ckpt_cb.advance_to_next_shard()
 
 if __name__ == "__main__":
     main("configs/magicpoint.yaml")

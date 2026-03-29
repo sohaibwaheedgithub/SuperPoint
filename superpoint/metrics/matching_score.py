@@ -1,6 +1,6 @@
 import keras
 import tensorflow as tf
-from constants import MP_INPUT_SHAPE
+from constants import SP_INPUT_SHAPE
 
 
 class MatchingScore(keras.metrics.Metric):
@@ -136,11 +136,11 @@ class MatchingScore(keras.metrics.Metric):
         
         valid_x = tf.logical_and(
             transformed_kpts[:, 0] >= 0,
-            transformed_kpts[:, 0] < tf.cast(MP_INPUT_SHAPE[1], tf.float32)
+            transformed_kpts[:, 0] < tf.cast(SP_INPUT_SHAPE[1], tf.float32)
         )
         valid_y = tf.logical_and(
             transformed_kpts[:, 1] >= 0,
-            transformed_kpts[:, 1] < tf.cast(MP_INPUT_SHAPE[0], tf.float32)
+            transformed_kpts[:, 1] < tf.cast(SP_INPUT_SHAPE[0], tf.float32)
         )
         
         valid_mask = tf.logical_and(valid_x, valid_y)

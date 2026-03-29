@@ -3,7 +3,7 @@ import sys
 from glob import glob
 import tensorflow as tf
 
-from superpoint.constants import MP_INPUT_SHAPE
+from superpoint.constants import SP_INPUT_SHAPE
 
 
 
@@ -16,8 +16,8 @@ INPUT_FEATURES = {
 def generate_bins(points):
     points = tf.round(points)
     # To prepare all possible set of coordinates of points in the image
-    x = range(0, MP_INPUT_SHAPE[0])
-    y = range(0, MP_INPUT_SHAPE[1])
+    x = range(0, SP_INPUT_SHAPE[0])
+    y = range(0, SP_INPUT_SHAPE[1])
     X, Y = tf.meshgrid(x, y, indexing="ij")
     # Shaping it up in this form so that points can be compared using tf.equal
     X, Y = X[..., tf.newaxis], Y[..., tf.newaxis]
@@ -27,7 +27,7 @@ def generate_bins(points):
     # Then reducing [bool, bool] -> [bool] to get only those pixels where both coordinates match
     binsBooleanMask = tf.reduce_all(tf.equal(gridsRegion, points[tf.newaxis, ...]), axis=-1)
     # Reshaping [total_cooridnates, n_gt_pts] -> [120, 160, n_gt_pts]
-    binsBooleanMask = tf.reshape(binsBooleanMask, [MP_INPUT_SHAPE[0], MP_INPUT_SHAPE[1], -1])
+    binsBooleanMask = tf.reshape(binsBooleanMask, [SP_INPUT_SHAPE[0], SP_INPUT_SHAPE[1], -1])
     # converting True -> 1 and False -> 0, since amoung all points there exists only one point that lies on a certain
     # pixel, then if we sum all points together we will get 1 for pixels where points lie and 0 for pixels where points
     # doesn't lie
@@ -48,8 +48,8 @@ def parse_example(example):
     parsed = tf.io.parse_single_example(example, INPUT_FEATURES)
     image = parsed["image"]                                                  
     points = tf.io.parse_tensor(parsed["points"], out_type=tf.float32) / 2    # Since some records were processed incorrectly, the ones with size around 155..... Kbs, so need to divide their points first by 2
-    scale_y = MP_INPUT_SHAPE[0] / 120
-    scale_x = MP_INPUT_SHAPE[1] / 160
+    scale_y = SP_INPUT_SHAPE[0] / 120
+    scale_x = SP_INPUT_SHAPE[1] / 160
     points *= [scale_y, scale_x]                                    
     points.set_shape([None, 2])
 

@@ -1,5 +1,5 @@
 import tensorflow as tf
-from constants import MP_INPUT_SHAPE, MP_BATCH_SIZE
+from superpoint.constants import SP_INPUT_SHAPE, SP_BATCH_SIZE
 
 
 # Homographic adaptation for generating pseudo ground truth
@@ -12,37 +12,29 @@ class HomographicAdapter:
             n_homographies: Number of homographies to use for each image
         """
         self.n_homographies = n_homographies
-        self.interest_point_model = None  # Will be set by the trainer
-        
-    def set_interest_point_model(self, model):
-        """
-        Set the interest point detection model to use for pseudo label generation
-        
-        Args:
-            model: SuperPoint model or any model with interest point detection capability
-        """
-        self.interest_point_model = model
     
+
     @tf.function(jit_compile=True)    
     def meshgrid(self):
-        x_t = tf.linspace(0.0, tf.cast(MP_INPUT_SHAPE[1] - 1, tf.float32), MP_INPUT_SHAPE[1])
-        y_t = tf.linspace(0.0, tf.cast(MP_INPUT_SHAPE[0] - 1, tf.float32), MP_INPUT_SHAPE[0])
+        x_t = tf.linspace(0.0, tf.cast(SP_INPUT_SHAPE[1] - 1, tf.float32), SP_INPUT_SHAPE[1])
+        y_t = tf.linspace(0.0, tf.cast(SP_INPUT_SHAPE[0] - 1, tf.float32), SP_INPUT_SHAPE[0])
         x_t, y_t = tf.meshgrid(x_t, y_t)
         ones = tf.ones_like(x_t)
         grid = tf.stack([x_t, y_t, ones], axis=0)  # [3, H, W]
         return grid
 
+
     @tf.function(
         input_signature=(
-            tf.TensorSpec(shape=[1]+MP_INPUT_SHAPE, dtype=tf.float32),
+            tf.TensorSpec(shape=[None] + SP_INPUT_SHAPE, dtype=tf.float32),
             tf.TensorSpec(shape=[3, 3], dtype=tf.float32)
         ),
         jit_compile=True
-    )    
+    )
     def apply_homography(self, image, H):
         H = tf.cast(H, tf.float32)
         batch_size = tf.shape(image)[0]
-        height, width = MP_INPUT_SHAPE[0], MP_INPUT_SHAPE[1]
+        height, width = SP_INPUT_SHAPE[0], SP_INPUT_SHAPE[1]
 
         grid = self.meshgrid()  # [3, H, W]
         grid_flat = tf.reshape(grid, [3, -1])  # [3, H*W]
@@ -52,7 +44,7 @@ class HomographicAdapter:
 
         # Tile the grid for batch processing
         grid_flat = tf.expand_dims(grid_flat, axis=0)
-        grid_flat = tf.tile(grid_flat, [batch_size, 1, 1])  # [B, 3, H*W]
+        grid_flat = tf.tile(grid_flat, [SP_BATCH_SIZE, 1, 1])  # [B, 3, H*W]
 
         warped_coords = tf.matmul(H_inv, grid_flat)  # [B, 3, H*W]
         x_warped = warped_coords[:, 0, :] / (warped_coords[:, 2, :] + 1e-8)
@@ -95,7 +87,8 @@ class HomographicAdapter:
         warped_image = tf.reshape(warped_image, [batch_size, height, width, -1])
         return warped_image
     
-    @tf.function(input_signature=(tf.TensorSpec(shape=MP_INPUT_SHAPE, dtype=tf.float32),), jit_compile=True)
+
+    @tf.function(input_signature=(tf.TensorSpec(shape=SP_INPUT_SHAPE, dtype=tf.float32),), jit_compile=True)
     def random_homographic_transform(self, image, params=None):
         """
         Apply a random homographic transformation to an image
@@ -175,20 +168,6 @@ class HomographicAdapter:
         H = tf.convert_to_tensor(random_homography_matrix, dtype=tf.float32)
         H_inverse = tf.linalg.inv(H)
         
-        # Apply transformation to image
-        '''transformed_img = tf.numpy_function(
-            lambda img, matrix: cv2.warpPerspective(
-                img,
-                matrix,
-                dsize=MP_INPUT_SHAPE[-2::-1],
-                flags=cv2.INTER_LINEAR,
-                borderMode=cv2.BORDER_CONSTANT,
-                borderValue=0
-            ),
-            [image, H],
-            tf.float32
-        )'''
-        
         transformed_img = self.apply_homography(image[tf.newaxis, ...], H)
             
         return transformed_img, H, H_inverse
@@ -197,8 +176,8 @@ class HomographicAdapter:
     def generateBins(self, points):
         points = tf.round(points)
         # To prepare all possible set of coordinates of points in the image
-        x = range(0, MP_INPUT_SHAPE[0])
-        y = range(0, MP_INPUT_SHAPE[1])
+        x = range(0, SP_INPUT_SHAPE[0])
+        y = range(0, SP_INPUT_SHAPE[1])
         X, Y = tf.meshgrid(x, y, indexing="ij")
         # Shaping it up in this form so that points can be compared using tf.equal
         X, Y = X[..., tf.newaxis], Y[..., tf.newaxis]
@@ -208,7 +187,7 @@ class HomographicAdapter:
         # Then reducing [bool, bool] -> [bool] to get only those pixels where both coordinates match
         binsBooleanMask = tf.reduce_all(tf.equal(gridsRegion, points[tf.newaxis, ...]), axis=-1)
         # Reshaping [total_cooridnates, n_gt_pts] -> [120, 160, n_gt_pts]
-        binsBooleanMask = tf.reshape(binsBooleanMask, [MP_INPUT_SHAPE[0], MP_INPUT_SHAPE[1], -1])
+        binsBooleanMask = tf.reshape(binsBooleanMask, [SP_INPUT_SHAPE[0], SP_INPUT_SHAPE[1], -1])
         # converting True -> 1 and False -> 0, since amoung all points there exists only one point that lies on a certain
         # pixel, then if we sum all points together we will get 1 for pixels where points lie and 0 for pixels where points
         # doesn't lie
@@ -220,8 +199,43 @@ class HomographicAdapter:
         bins = tf.argmax(bins, axis=-1, output_type=tf.int32)
         return bins
     
-    @tf.function(input_signature=(tf.TensorSpec(shape=[MP_BATCH_SIZE]+MP_INPUT_SHAPE, dtype=tf.float32),), jit_compile=True)
-    def generate_data(self, batch_images):
+    
+    def homographic_adaptation(self, img, interest_point_model, threshold=0.015):
+        """
+        Apply homographic adaptation to get robust interest points using the current model
+        
+        Args:
+            img: Input image tensor [height, width, channels]
+            threshold: Threshold for considering a point as an interest point
+            
+        Returns:
+            final_output: Averaged and thresholded interest point heatmap
+        """
+        # Storage for outputs
+        unwarped_outputs = tf.TensorArray(tf.float32, size=self.n_homographies, element_shape=SP_INPUT_SHAPE[:-1])
+        
+        for i in tf.range(self.n_homographies):
+            # Apply random homographic transformation
+            transformed_img, H, H_inverse = self.random_homographic_transform(img)
+            
+            # Run inference on transformed image using current SuperPoint model
+            output = interest_point_model(transformed_img, training=False)["detector_heatmap"]
+        
+            #unwarped_output = self.apply_homography(output[tf.newaxis, ...], H_inverse)[0, ..., 0]
+            unwarped_output = self.apply_homography(output, H_inverse)[0, ..., 0]
+            
+            # Store unwarped output
+            unwarped_outputs = unwarped_outputs.write(i, unwarped_output)
+            
+        # Stack and average all outputs
+        final_outputs = unwarped_outputs.stack()
+        final_output = tf.reduce_mean(final_outputs, axis=0)
+        
+        # Apply threshold to get binary interest point map
+        return tf.cast(tf.greater_equal(final_output, threshold), tf.float32)
+
+
+    def generate_data(self, batch_images, interest_point_model):
         """
         Generate pseudo ground truth for a batch of images using Homographic Adaptation
         
@@ -233,19 +247,19 @@ class HomographicAdapter:
         """
         
         # Preallocate arrays for results
-        pseudo_labels = tf.TensorArray(tf.float32, size=MP_BATCH_SIZE, element_shape=MP_INPUT_SHAPE)
-        pseudo_bins = tf.TensorArray(tf.int32, size=MP_BATCH_SIZE, element_shape=[MP_INPUT_SHAPE[0]//8, MP_INPUT_SHAPE[1]//8])
-        transformed_images = tf.TensorArray(tf.float32, size=MP_BATCH_SIZE, element_shape=MP_INPUT_SHAPE)
-        transformed_labels = tf.TensorArray(tf.float32, size=MP_BATCH_SIZE, element_shape=MP_INPUT_SHAPE[:-1])
-        transformed_bins = tf.TensorArray(tf.int32, size=MP_BATCH_SIZE, element_shape=[MP_INPUT_SHAPE[0]//8, MP_INPUT_SHAPE[1]//8])
-        homography_matrices = tf.TensorArray(tf.float32, size=MP_BATCH_SIZE, element_shape=[3, 3])
+        pseudo_labels = tf.TensorArray(tf.float32, size=SP_BATCH_SIZE, element_shape=SP_INPUT_SHAPE)
+        pseudo_bins = tf.TensorArray(tf.int32, size=SP_BATCH_SIZE, element_shape=[SP_INPUT_SHAPE[0]//8, SP_INPUT_SHAPE[1]//8])
+        transformed_images = tf.TensorArray(tf.float32, size=SP_BATCH_SIZE, element_shape=SP_INPUT_SHAPE)
+        transformed_labels = tf.TensorArray(tf.float32, size=SP_BATCH_SIZE, element_shape=SP_INPUT_SHAPE[:-1])
+        transformed_bins = tf.TensorArray(tf.int32, size=SP_BATCH_SIZE, element_shape=[SP_INPUT_SHAPE[0]//8, SP_INPUT_SHAPE[1]//8])
+        homography_matrices = tf.TensorArray(tf.float32, size=SP_BATCH_SIZE, element_shape=[3, 3])
         
         # Process each image in the batch
-        for i in tf.range(MP_BATCH_SIZE):
+        for i in tf.range(SP_BATCH_SIZE):
             img = batch_images[i]
             
             # Apply homographic adaptation to get robust points using current model
-            final_output = self.homographic_adaptation(img)
+            final_output = self.homographic_adaptation(img, interest_point_model)
             labels = final_output[..., tf.newaxis]
             bins = self.generateBins(tf.cast(tf.sparse.from_dense(labels).indices[:, :-1], tf.float32))
             
@@ -289,57 +303,4 @@ class HomographicAdapter:
             "homography_matrices": homography_matrices.stack()
         }
     
-    @tf.function(input_signature=(tf.TensorSpec(shape=MP_INPUT_SHAPE, dtype=tf.float32),), jit_compile=True)
-    def homographic_adaptation(self, img, threshold=0.015):
-        """
-        Apply homographic adaptation to get robust interest points using the current model
-        
-        Args:
-            img: Input image tensor [height, width, channels]
-            threshold: Threshold for considering a point as an interest point
-            
-        Returns:
-            final_output: Averaged and thresholded interest point heatmap
-        """
-        # Storage for outputs
-        unwarped_outputs = tf.TensorArray(tf.float32, size=self.n_homographies, element_shape=MP_INPUT_SHAPE[:-1])
-        
-        for i in tf.range(self.n_homographies):
-            # Apply random homographic transformation
-            transformed_img, H, H_inverse = self.random_homographic_transform(img)
-            
-            # Run inference on transformed image using current SuperPoint model
-            # Use only the interest point detection part (ipdPostProcessedOutput)
-            # output = tf.squeeze(
-            #     self.interest_point_model(transformed_img, training=False)["detector_post_processor"], 
-            #     axis=0
-            # )
-
-            output = self.interest_point_model(transformed_img, training=False)["detector_post_processor"]
-            
-            # Unwarp the detection back to original image space
-            '''unwarped_output = tf.numpy_function(
-                lambda img, matrix: cv2.warpPerspective(
-                    img,
-                    matrix,
-                    dsize=MP_INPUT_SHAPE[-2::-1],
-                    flags=cv2.INTER_LINEAR,
-                    borderMode=cv2.BORDER_CONSTANT,
-                    borderValue=0
-                ),
-                [output, H_inverse],
-                tf.float32
-            )'''
-        
-            #unwarped_output = self.apply_homography(output[tf.newaxis, ...], H_inverse)[0, ..., 0]
-            unwarped_output = self.apply_homography(output, H_inverse)[0, ..., 0]
-            
-            # Store unwarped output
-            unwarped_outputs = unwarped_outputs.write(i, unwarped_output)
-            
-        # Stack and average all outputs
-        final_outputs = unwarped_outputs.stack()
-        final_output = tf.reduce_mean(final_outputs, axis=0)
-        
-        # Apply threshold to get binary interest point map
-        return tf.cast(tf.greater_equal(final_output, threshold), tf.float32)
+    

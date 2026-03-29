@@ -33,17 +33,21 @@ class TrainingStateCheckpoint(tf.keras.callbacks.Callback):
         self.best = float("inf") if mode == "min" else -float("inf")
 
 
-    def on_epoch_end(self, epoch, logs=None):
-        self.tfrecord_start += 1
-        self.epoch_start += 1
-
-        # ---- save training state ----
+    def _save_training_state(self):
         save_state(
             self.shard,
             self.tfrecord_start,
             self.epoch_start,
             state_path=self.state_path,
         )
+
+
+    def on_epoch_end(self, epoch, logs=None):
+        self.tfrecord_start += 1
+        self.epoch_start += 1
+
+        # ---- save training state ----
+        self._save_training_state()
 
         # ---- save "last" checkpoint ----
         if self.last_ckpt_manager:
@@ -64,3 +68,9 @@ class TrainingStateCheckpoint(tf.keras.callbacks.Callback):
             if improved:
                 self.best = current
                 self.best_ckpt_manager.save()
+
+
+    def advance_to_next_shard(self):
+        self.shard += 1
+        self.tfrecord_start = 0
+        self._save_training_state()

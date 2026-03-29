@@ -1,6 +1,6 @@
 import keras
 import tensorflow as tf
-from superpoint import MP_INPUT_SHAPE
+from superpoint import SP_INPUT_SHAPE
 
 class DescriptorLoss(keras.losses.Loss):
     """
@@ -11,10 +11,11 @@ class DescriptorLoss(keras.losses.Loss):
     """
     
     def __init__(self, 
-                 positive_margin=1.0, 
-                 negative_margin=0.2, 
-                 delta=250,
-                 name='superpoint_descriptor_loss'):
+        positive_margin=1.0, 
+        negative_margin=0.2, 
+        delta=250,
+        name='superpoint_descriptor_loss'
+    ):
         """
         Initialize SuperPoint descriptor loss.
         
@@ -33,8 +34,8 @@ class DescriptorLoss(keras.losses.Loss):
         
         # Pre-compute static values that don't change between calls
         # Assuming feature map dimensions are 30x40 (8x downsampling)
-        self.Hc = MP_INPUT_SHAPE[0] // 8
-        self.Wc = MP_INPUT_SHAPE[1] // 8
+        self.Hc = SP_INPUT_SHAPE[0] // 8
+        self.Wc = SP_INPUT_SHAPE[1] // 8
         
         # Create cell center coordinates grid for the first descriptor map
         h_indices = tf.range(self.Hc, dtype=tf.float32)

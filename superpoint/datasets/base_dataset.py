@@ -2,7 +2,7 @@ from typing import Dict, Tuple, List
 import tensorflow as tf
 from abc import ABC, abstractmethod
 
-from superpoint.constants import MP_INPUT_SHAPE
+from superpoint.constants import SP_INPUT_SHAPE
 
 
 class BaseTFRecordDataset(ABC):
