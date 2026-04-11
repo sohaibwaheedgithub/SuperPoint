@@ -1,9 +1,12 @@
 import os
 import sys
 from glob import glob
+from pathlib import Path
 import tensorflow as tf
 
-from superpoint.constants import SP_INPUT_SHAPE
+from superpoint.constants import INPUT_SHAPE
+from superpoint.configs.magicpoint_config import load_magicpoint_config
+from superpoint.utils.logging import setup_logger
 
 
 
@@ -16,8 +19,8 @@ INPUT_FEATURES = {
 def generate_bins(points):
     points = tf.round(points)
     # To prepare all possible set of coordinates of points in the image
-    x = range(0, SP_INPUT_SHAPE[0])
-    y = range(0, SP_INPUT_SHAPE[1])
+    x = range(0, INPUT_SHAPE[0])
+    y = range(0, INPUT_SHAPE[1])
     X, Y = tf.meshgrid(x, y, indexing="ij")
     # Shaping it up in this form so that points can be compared using tf.equal
     X, Y = X[..., tf.newaxis], Y[..., tf.newaxis]
@@ -27,7 +30,7 @@ def generate_bins(points):
     # Then reducing [bool, bool] -> [bool] to get only those pixels where both coordinates match
     binsBooleanMask = tf.reduce_all(tf.equal(gridsRegion, points[tf.newaxis, ...]), axis=-1)
     # Reshaping [total_cooridnates, n_gt_pts] -> [120, 160, n_gt_pts]
-    binsBooleanMask = tf.reshape(binsBooleanMask, [SP_INPUT_SHAPE[0], SP_INPUT_SHAPE[1], -1])
+    binsBooleanMask = tf.reshape(binsBooleanMask, [INPUT_SHAPE[0], INPUT_SHAPE[1], -1])
     # converting True -> 1 and False -> 0, since amoung all points there exists only one point that lies on a certain
     # pixel, then if we sum all points together we will get 1 for pixels where points lie and 0 for pixels where points
     # doesn't lie
@@ -48,8 +51,8 @@ def parse_example(example):
     parsed = tf.io.parse_single_example(example, INPUT_FEATURES)
     image = parsed["image"]                                                  
     points = tf.io.parse_tensor(parsed["points"], out_type=tf.float32) / 2    # Since some records were processed incorrectly, the ones with size around 155..... Kbs, so need to divide their points first by 2
-    scale_y = SP_INPUT_SHAPE[0] / 120
-    scale_x = SP_INPUT_SHAPE[1] / 160
+    scale_y = INPUT_SHAPE[0] / 120
+    scale_x = INPUT_SHAPE[1] / 160
     points *= [scale_y, scale_x]                                    
     points.set_shape([None, 2])
 
@@ -98,10 +101,22 @@ def process_tfrecord(path: str):
 
 
 if __name__ == "__main__":
-    tfrecord_files = sorted(glob("data/tfrecords/synthetic_shapes/train_2/*.tfrecord"))[:1]
+    cfg = load_magicpoint_config("configs/magicpoint.yaml")
+    exp_dir = Path(cfg.logging.root_dir) / cfg.logging.experiment_name
+    logger = setup_logger(exp_dir)
 
-    for tfrecord in tfrecord_files:
-        print(f"Processing: {tfrecord}")
+    tfrecord_files = sorted(glob("data/tfrecords/synthetic_shapes/train_3/*.tfrecord"))
+    total_files = len(tfrecord_files)
+
+    logger.info("Starting bin precomputation")
+    logger.info(f"Writing logs to: {exp_dir / 'train.log'}")
+
+    for file_idx, tfrecord in enumerate(tfrecord_files, start=1):
+        tfrecord_path = Path(tfrecord)
+        logger.info(
+            f"Processing dir: {tfrecord_path.parent} | file {file_idx}/{total_files}: {tfrecord_path.name}"
+        )
         process_tfrecord(tfrecord)
 
-    print("✅ Bins added to TFRecords")
+    logger.info("Bins added to TFRecords")
+

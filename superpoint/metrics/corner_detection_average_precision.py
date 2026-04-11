@@ -3,7 +3,7 @@ import tensorflow as tf
 from superpoint.constants import (
     eta,
     cdap_dtype, 
-    SP_INPUT_SHAPE, 
+    INPUT_SHAPE, 
     detection_confidences
 )
 
@@ -27,7 +27,7 @@ class CornerDetectionAveragePrecision(keras.metrics.Metric):
 
     @tf.function(input_signature=((
         tf.TensorSpec(shape=[None, 2], dtype=cdap_dtype),
-        tf.TensorSpec(shape=SP_INPUT_SHAPE, dtype=cdap_dtype)
+        tf.TensorSpec(shape=INPUT_SHAPE, dtype=cdap_dtype)
     ),))
     def corner_detection_precision(self, instance):        
         # Remove padded [0, 0] ground-truth points added by padded_batch;
@@ -114,7 +114,7 @@ class CornerDetectionAveragePrecision(keras.metrics.Metric):
     
     @tf.function(input_signature=(
         tf.TensorSpec(shape=[None, None, 2], dtype=cdap_dtype),
-        tf.TensorSpec(shape=[None] + SP_INPUT_SHAPE, dtype=cdap_dtype)  
+        tf.TensorSpec(shape=[None] + INPUT_SHAPE, dtype=cdap_dtype)  
     ))
     def update_state(self, y_true, y_pred, sample_weight=None):
         localization_errors = tf.map_fn(

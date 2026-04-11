@@ -1,5 +1,5 @@
 import tensorflow as tf
-from superpoint.constants import SP_INPUT_SHAPE, SP_BATCH_SIZE
+from superpoint.constants import INPUT_SHAPE, SP_BATCH_SIZE
 
 
 # Homographic adaptation for generating pseudo ground truth
@@ -16,8 +16,8 @@ class HomographicAdapter:
 
     @tf.function(jit_compile=True)    
     def meshgrid(self):
-        x_t = tf.linspace(0.0, tf.cast(SP_INPUT_SHAPE[1] - 1, tf.float32), SP_INPUT_SHAPE[1])
-        y_t = tf.linspace(0.0, tf.cast(SP_INPUT_SHAPE[0] - 1, tf.float32), SP_INPUT_SHAPE[0])
+        x_t = tf.linspace(0.0, tf.cast(INPUT_SHAPE[1] - 1, tf.float32), INPUT_SHAPE[1])
+        y_t = tf.linspace(0.0, tf.cast(INPUT_SHAPE[0] - 1, tf.float32), INPUT_SHAPE[0])
         x_t, y_t = tf.meshgrid(x_t, y_t)
         ones = tf.ones_like(x_t)
         grid = tf.stack([x_t, y_t, ones], axis=0)  # [3, H, W]
@@ -26,7 +26,7 @@ class HomographicAdapter:
 
     @tf.function(
         input_signature=(
-            tf.TensorSpec(shape=[None] + SP_INPUT_SHAPE, dtype=tf.float32),
+            tf.TensorSpec(shape=[None] + INPUT_SHAPE, dtype=tf.float32),
             tf.TensorSpec(shape=[3, 3], dtype=tf.float32)
         ),
         jit_compile=True
@@ -34,7 +34,7 @@ class HomographicAdapter:
     def apply_homography(self, image, H):
         H = tf.cast(H, tf.float32)
         batch_size = tf.shape(image)[0]
-        height, width = SP_INPUT_SHAPE[0], SP_INPUT_SHAPE[1]
+        height, width = INPUT_SHAPE[0], INPUT_SHAPE[1]
 
         grid = self.meshgrid()  # [3, H, W]
         grid_flat = tf.reshape(grid, [3, -1])  # [3, H*W]
@@ -88,7 +88,7 @@ class HomographicAdapter:
         return warped_image
     
 
-    @tf.function(input_signature=(tf.TensorSpec(shape=SP_INPUT_SHAPE, dtype=tf.float32),), jit_compile=True)
+    @tf.function(input_signature=(tf.TensorSpec(shape=INPUT_SHAPE, dtype=tf.float32),), jit_compile=True)
     def random_homographic_transform(self, image, params=None):
         """
         Apply a random homographic transformation to an image
@@ -176,8 +176,8 @@ class HomographicAdapter:
     def generateBins(self, points):
         points = tf.round(points)
         # To prepare all possible set of coordinates of points in the image
-        x = range(0, SP_INPUT_SHAPE[0])
-        y = range(0, SP_INPUT_SHAPE[1])
+        x = range(0, INPUT_SHAPE[0])
+        y = range(0, INPUT_SHAPE[1])
         X, Y = tf.meshgrid(x, y, indexing="ij")
         # Shaping it up in this form so that points can be compared using tf.equal
         X, Y = X[..., tf.newaxis], Y[..., tf.newaxis]
@@ -187,7 +187,7 @@ class HomographicAdapter:
         # Then reducing [bool, bool] -> [bool] to get only those pixels where both coordinates match
         binsBooleanMask = tf.reduce_all(tf.equal(gridsRegion, points[tf.newaxis, ...]), axis=-1)
         # Reshaping [total_cooridnates, n_gt_pts] -> [120, 160, n_gt_pts]
-        binsBooleanMask = tf.reshape(binsBooleanMask, [SP_INPUT_SHAPE[0], SP_INPUT_SHAPE[1], -1])
+        binsBooleanMask = tf.reshape(binsBooleanMask, [INPUT_SHAPE[0], INPUT_SHAPE[1], -1])
         # converting True -> 1 and False -> 0, since amoung all points there exists only one point that lies on a certain
         # pixel, then if we sum all points together we will get 1 for pixels where points lie and 0 for pixels where points
         # doesn't lie
@@ -212,7 +212,7 @@ class HomographicAdapter:
             final_output: Averaged and thresholded interest point heatmap
         """
         # Storage for outputs
-        unwarped_outputs = tf.TensorArray(tf.float32, size=self.n_homographies, element_shape=SP_INPUT_SHAPE[:-1])
+        unwarped_outputs = tf.TensorArray(tf.float32, size=self.n_homographies, element_shape=INPUT_SHAPE[:-1])
         
         for i in tf.range(self.n_homographies):
             # Apply random homographic transformation
@@ -247,11 +247,11 @@ class HomographicAdapter:
         """
         
         # Preallocate arrays for results
-        pseudo_labels = tf.TensorArray(tf.float32, size=SP_BATCH_SIZE, element_shape=SP_INPUT_SHAPE)
-        pseudo_bins = tf.TensorArray(tf.int32, size=SP_BATCH_SIZE, element_shape=[SP_INPUT_SHAPE[0]//8, SP_INPUT_SHAPE[1]//8])
-        transformed_images = tf.TensorArray(tf.float32, size=SP_BATCH_SIZE, element_shape=SP_INPUT_SHAPE)
-        transformed_labels = tf.TensorArray(tf.float32, size=SP_BATCH_SIZE, element_shape=SP_INPUT_SHAPE[:-1])
-        transformed_bins = tf.TensorArray(tf.int32, size=SP_BATCH_SIZE, element_shape=[SP_INPUT_SHAPE[0]//8, SP_INPUT_SHAPE[1]//8])
+        pseudo_labels = tf.TensorArray(tf.float32, size=SP_BATCH_SIZE, element_shape=INPUT_SHAPE)
+        pseudo_bins = tf.TensorArray(tf.int32, size=SP_BATCH_SIZE, element_shape=[INPUT_SHAPE[0]//8, INPUT_SHAPE[1]//8])
+        transformed_images = tf.TensorArray(tf.float32, size=SP_BATCH_SIZE, element_shape=INPUT_SHAPE)
+        transformed_labels = tf.TensorArray(tf.float32, size=SP_BATCH_SIZE, element_shape=INPUT_SHAPE[:-1])
+        transformed_bins = tf.TensorArray(tf.int32, size=SP_BATCH_SIZE, element_shape=[INPUT_SHAPE[0]//8, INPUT_SHAPE[1]//8])
         homography_matrices = tf.TensorArray(tf.float32, size=SP_BATCH_SIZE, element_shape=[3, 3])
         
         # Process each image in the batch
@@ -265,20 +265,6 @@ class HomographicAdapter:
             
             # Apply random homographic transformations to the training images and their pseudo-labels
             transformed_img, H, _ = self.random_homographic_transform(img)
-            
-            # Transform pseudo-label to match the transformed image
-            '''transformed_label = tf.numpy_function(
-                lambda lbl, matrix: cv2.warpPerspective(
-                    lbl,
-                    matrix,
-                    dsize=MP_INPUT_SHAPE[-2::-1],
-                    flags=cv2.INTER_NEAREST,  # Use nearest for labels to avoid interpolation issues
-                    borderMode=cv2.BORDER_CONSTANT,
-                    borderValue=0
-                ),
-                [labels, H],
-                tf.float32
-            )'''
             
             transformed_label = self.apply_homography(labels[tf.newaxis, ...], H)[0, ..., 0]
             transformed_bin = self.generateBins(
@@ -302,5 +288,4 @@ class HomographicAdapter:
             "transformed_bins": transformed_bins.stack(),
             "homography_matrices": homography_matrices.stack()
         }
-    
     

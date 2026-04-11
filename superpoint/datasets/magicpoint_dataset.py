@@ -2,7 +2,7 @@ from typing import List, Tuple
 import tensorflow as tf
 
 from superpoint.datasets.base_dataset import BaseTFRecordDataset
-from superpoint.constants import SP_INPUT_SHAPE
+from superpoint.constants import INPUT_SHAPE
 
 
 class MagicPointDataset(BaseTFRecordDataset):
@@ -35,14 +35,13 @@ class MagicPointDataset(BaseTFRecordDataset):
         return sample_weights
 
 
-
     def _parse_example(self, example: tf.Tensor) -> Tuple[tf.Tensor, tf.Tensor]:
         parsed = tf.io.parse_single_example(example, self.feature_description)
 
         image = tf.io.decode_png(parsed["image"], channels=1)
-        image = tf.image.resize(image, SP_INPUT_SHAPE[:2])
+        image = tf.image.resize(image, INPUT_SHAPE[:2])
         image = tf.cast(image, tf.float32)
-        image.set_shape(SP_INPUT_SHAPE)
+        image.set_shape(INPUT_SHAPE)
      
         points = tf.io.parse_tensor(parsed["points"], out_type=tf.float32)
         points.set_shape([None, 2])
@@ -50,7 +49,7 @@ class MagicPointDataset(BaseTFRecordDataset):
         bins = tf.io.parse_tensor(
             parsed["bins"], out_type=tf.int32
         )
-        bins.set_shape([SP_INPUT_SHAPE[0]//8, SP_INPUT_SHAPE[1]//8])
+        bins.set_shape([INPUT_SHAPE[0]//8, INPUT_SHAPE[1]//8])
 
         # Compute sample weights of each point
         sample_weights = self._compute_sample_weights(bins)

@@ -1,6 +1,6 @@
 import keras
 import tensorflow as tf
-from superpoint.constants import SP_INPUT_SHAPE
+from superpoint.constants import INPUT_SHAPE
 
 
 # Postprocessing Layer For InterestPointDecoder to reshape outputs
@@ -35,7 +35,7 @@ class DescriptorPostProcessor(keras.layers.Layer):
         return tf.nn.l2_normalize(
             tf.image.resize(
                 tf.nn.relu(inputs), 
-                size=SP_INPUT_SHAPE[:2], 
+                size=INPUT_SHAPE[:2], 
                 method=tf.image.ResizeMethod.BICUBIC), 
             axis=-1
         )
@@ -44,4 +44,4 @@ class DescriptorPostProcessor(keras.layers.Layer):
         if input_shape is None:
             return None
         batch, _height, _width, channels = input_shape
-        return (batch, SP_INPUT_SHAPE[0], SP_INPUT_SHAPE[1], channels)
+        return (batch, INPUT_SHAPE[0], INPUT_SHAPE[1], channels)

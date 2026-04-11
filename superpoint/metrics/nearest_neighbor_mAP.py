@@ -1,6 +1,6 @@
 import keras 
 import tensorflow as tf
-from constants import SP_INPUT_SHAPE
+from constants import INPUT_SHAPE
 
 
 class NearestNeighborMAP(keras.metrics.Metric):
@@ -45,8 +45,8 @@ class NearestNeighborMAP(keras.metrics.Metric):
     
     @tf.function(
         input_signature=(
-            tf.TensorSpec([SP_INPUT_SHAPE[0] // 8, SP_INPUT_SHAPE[1] // 8, 256], tf.float32),
-            tf.TensorSpec([SP_INPUT_SHAPE[0] // 8, SP_INPUT_SHAPE[1] // 8, 256], tf.float32),
+            tf.TensorSpec([INPUT_SHAPE[0] // 8, INPUT_SHAPE[1] // 8, 256], tf.float32),
+            tf.TensorSpec([INPUT_SHAPE[0] // 8, INPUT_SHAPE[1] // 8, 256], tf.float32),
             tf.TensorSpec([3, 3], tf.float32)
         ),
         jit_compile=False
@@ -113,7 +113,7 @@ class NearestNeighborMAP(keras.metrics.Metric):
             flattened_descriptors: [H*W, 256]
             coordinates: [H*W, 2] in image pixel coordinates
         """
-        H, W = SP_INPUT_SHAPE[0] // 8, SP_INPUT_SHAPE[1] // 8
+        H, W = INPUT_SHAPE[0] // 8, INPUT_SHAPE[1] // 8
         
         # Flatten descriptors
         desc_flat = tf.reshape(descriptors, [H * W, 256])

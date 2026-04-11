@@ -1,7 +1,7 @@
 import cv2
 import keras
 import tensorflow as tf
-from constants import SP_INPUT_SHAPE
+from constants import INPUT_SHAPE
 
 
 
@@ -146,7 +146,7 @@ class HomographyEstimationMetric(keras.metrics.Metric):
             1.0 if homography is correct (mean corner accuracy >= η), 0.0 otherwise
         """
         
-        height, width = SP_INPUT_SHAPE[:-1]
+        height, width = INPUT_SHAPE[:-1]
         
         # Define four corners of the first image
         corners = tf.constant([

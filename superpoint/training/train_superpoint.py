@@ -4,7 +4,7 @@ import keras
 import random
 import tensorflow as tf
 from pathlib import Path
-from superpoint.constants import SP_INPUT_SHAPE, detection_confidences
+from superpoint.constants import INPUT_SHAPE, detection_confidences
 from superpoint.utils.logging import setup_logger
 from superpoint.models.superpoint import SuperPoint
 from superpoint.utils.checkpointing import load_state
@@ -170,54 +170,6 @@ def main(config_path: str):
                 ],
                 verbose=1,
             )
-
-            # Writing cdap_metric in tensorboard
-
-            train_batch = next(iter(train_dataset.take(1)))
-            train_outputs = model(train_batch["image"], training=False)
-            
-            valid_batch = vis_batch
-            valid_outputs = model(valid_batch["image"], training=False)
-
-            with tb_writer.as_default():
-                cdap_metric.update_state(train_batch["points"], train_outputs["heatmap"])
-                for key, value in cdap_metric.result().items():
-                    tf.summary.scalar(key, value, step=state_ckpt_cb.epoch_start)
-
-                # Writing PR Curve
-                precisions = cdap_metric.batch_precisions
-                recalls = cdap_metric.batch_recalls
-                sort_idx = tf.argsort(recalls)
-                recalls_sorted = tf.gather(recalls, sort_idx)
-                precisions_sorted = tf.gather(precisions, sort_idx)
-                pr_auc = tf.reduce_sum(
-                    (recalls_sorted[1:] - recalls_sorted[:-1])
-                    * (precisions_sorted[1:] + precisions_sorted[:-1])
-                    * 0.5
-                )
-
-                for i, conf in enumerate(detection_confidences):
-                    tf.summary.scalar(
-                        f"pr_curve/precision_at_{conf:.2f}",
-                        precisions[i],
-                        step=state_ckpt_cb.epoch_start,
-                    )
-                    tf.summary.scalar(
-                        f"pr_curve/recall_at_{conf:.2f}",
-                        recalls[i],
-                        step=state_ckpt_cb.epoch_start,
-                    )
-                tf.summary.scalar("pr_curve/auc", pr_auc, step=state_ckpt_cb.epoch_start)
-
-                cdap_metric.reset_state()
-
-
-                # Writing Validation Cdap Metric
-                cdap_metric.update_state(valid_batch["points"], valid_outputs["heatmap"])
-                for key, value in cdap_metric.result().items():
-                    tf.summary.scalar("val_" + key, value, step=state_ckpt_cb.epoch_start)
-                cdap_metric.reset_state()
-            
         
         state_ckpt_cb.advance_to_next_shard()
 

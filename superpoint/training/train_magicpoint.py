@@ -4,7 +4,7 @@ import keras
 import random
 import tensorflow as tf
 from pathlib import Path
-from superpoint.constants import SP_INPUT_SHAPE, detection_confidences
+from superpoint.constants import INPUT_SHAPE, detection_confidences
 from superpoint.utils.logging import setup_logger
 from superpoint.models.magicpoint import MagicPoint
 from superpoint.utils.checkpointing import load_state
@@ -60,7 +60,7 @@ def main(config_path: str):
         variance=cfg.model.variance,
     )
     
-    model(tf.zeros((cfg.training.batch_size, *SP_INPUT_SHAPE)))
+    model(tf.zeros((cfg.training.batch_size, *INPUT_SHAPE)))
 
     logger.info("Model built successfully")
 

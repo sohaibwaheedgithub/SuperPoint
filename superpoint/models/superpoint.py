@@ -4,7 +4,6 @@ from superpoint.models.components.encoder import SharedEncoder
 from superpoint.models.components.decoder import Decoder
 from superpoint.models.components.post_processor import DetectorPostProcessor, DescriptorPostProcessor
 from superpoint.metrics.corner_detection_average_precision import CornerDetectionAveragePrecision
-from superpoint.losses.descriptor_loss import DescriptorLoss
 
 
 
@@ -22,50 +21,20 @@ class SuperPoint(keras.Model):
         self.descriptor_post = DescriptorPostProcessor(name="descriptor_post_processor")
 
         self.homographic_adapter = homographic_adapter
-        self.detector_loss_fn = keras.losses.SparseCategoricalCrossentropy(from_logits=True)
-        self.descriptor_loss_fn = DescriptorLoss()
+        self.detector_loss_fn = None
+        self.descriptor_loss_fn = None
         self.descriptor_loss_weight = 1.0
 
-        self.loss_tracker = keras.metrics.Mean(name="loss")
-        self.detector_loss_1_tracker = keras.metrics.Mean(name="detector_loss_1")
-        self.detector_loss_2_tracker = keras.metrics.Mean(name="detector_loss_2")
-        self.descriptor_loss_tracker = keras.metrics.Mean(name="descriptor_loss")
-        self.cdap_metric = CornerDetectionAveragePrecision(
-            name="corner_detection_average_precision"
-        )
 
         self.mean = tf.constant(mean, dtype=tf.float32)
         self.variance = tf.constant(variance, dtype=tf.float32)
 
-    @property
-    def metrics(self):
-        return [
-            self.loss_tracker,
-            self.detector_loss_1_tracker,
-            self.detector_loss_2_tracker,
-            self.descriptor_loss_tracker,
-            self.cdap_metric,
-        ]
 
-    def compile(
-        self,
-        optimizer,
-        loss=None,
-        detector_loss=None,
-        descriptor_loss=None,
-        descriptor_loss_weight=1.0,
-        **kwargs
-    ):
-        super().compile(optimizer=optimizer, **kwargs)
+    def compile(self, optimizer, loss, descriptor_loss_weight=1.0, **kwargs):
+        super().compile(optimizer=optimizer, loss=loss, **kwargs)
 
-        if isinstance(loss, dict):
-            detector_loss = detector_loss or loss.get("detector_logits")
-            descriptor_loss = descriptor_loss or loss.get("descriptor_logits")
-        elif loss is not None and detector_loss is None:
-            detector_loss = loss
-
-        self.detector_loss_fn = detector_loss or self.detector_loss_fn
-        self.descriptor_loss_fn = descriptor_loss or self.descriptor_loss_fn
+        self.detector_loss_fn = loss["interestPointDecoderOutput"]
+        self.descriptor_loss_fn = loss["descriptorOutput"]
         self.descriptor_loss_weight = descriptor_loss_weight
 
 
@@ -124,23 +93,17 @@ class SuperPoint(keras.Model):
                 + (self.descriptor_loss_weight * descriptor_loss)
             )
 
-            if self.losses:
-                loss = loss + tf.add_n(self.losses)
-
         grads = tape.gradient(loss, self.trainable_variables)
         self.optimizer.apply_gradients(zip(grads, self.trainable_variables))
 
-        self.loss_tracker.update_state(loss)
-        self.detector_loss_1_tracker.update_state(detector_loss_1)
-        self.detector_loss_2_tracker.update_state(detector_loss_2)
-        self.descriptor_loss_tracker.update_state(descriptor_loss)
 
-        if "points" in data:
-            self.cdap_metric.update_state(data["points"], outputs["detector_heatmap"])
-
-        return_dict = {metric.name: metric.result() for metric in self.metrics[:-1]}
-        if "points" in data:
-            return_dict.update(self.cdap_metric.result())
+        return_dict = {
+            "loss": loss,
+            "detector_loss_1": detector_loss_1,
+            "detector_loss_2": detector_loss_2,
+            "descriptor_loss": descriptor_loss,
+        }
+        
         return return_dict
 
 
@@ -178,15 +141,12 @@ class SuperPoint(keras.Model):
         if self.losses:
             loss = loss + tf.add_n(self.losses)
 
-        self.loss_tracker.update_state(loss)
-        self.detector_loss_1_tracker.update_state(detector_loss_1)
-        self.detector_loss_2_tracker.update_state(detector_loss_2)
-        self.descriptor_loss_tracker.update_state(descriptor_loss)
 
-        if "points" in data:
-            self.cdap_metric.update_state(data["points"], outputs["detector_heatmap"])
-
-        return_dict = {metric.name: metric.result() for metric in self.metrics[:-1]}
-        if "points" in data:
-            return_dict.update(self.cdap_metric.result())
+        return_dict = {
+            "loss": loss,
+            "detector_loss_1": detector_loss_1,
+            "detector_loss_2": detector_loss_2,
+            "descriptor_loss": descriptor_loss,
+        }
+    
         return return_dict
