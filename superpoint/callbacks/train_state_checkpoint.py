@@ -5,6 +5,19 @@ from superpoint.utils.checkpointing import save_state
 
 
 class TrainingStateCheckpoint(tf.keras.callbacks.Callback):
+    # def __init__(
+    #     self,
+    #     ckpt,
+    #     last_ckpt_manager,
+    #     best_ckpt_manager,
+    #     shard_start,
+    #     tfrecord_start,
+    #     epoch_start,
+    #     state_path,
+    #     monitor="val_loss",
+    #     mode="min",
+    # ):
+
     def __init__(
         self,
         ckpt,
@@ -16,6 +29,7 @@ class TrainingStateCheckpoint(tf.keras.callbacks.Callback):
         state_path,
         monitor="val_loss",
         mode="min",
+        scheduler_cb=None,
     ):
         super().__init__()
 
@@ -30,16 +44,32 @@ class TrainingStateCheckpoint(tf.keras.callbacks.Callback):
 
         self.monitor = monitor
         self.mode = mode
+        self.scheduler_cb = scheduler_cb
+
         self.best = float("inf") if mode == "min" else -float("inf")
 
 
+    # def _save_training_state(self):
+    #     save_state(
+    #         self.shard,
+    #         self.tfrecord_start,
+    #         self.epoch_start,
+    #         state_path=self.state_path,
+    #     )
+    
     def _save_training_state(self):
+        scheduler_state = None
+        if self.scheduler_cb is not None:
+            scheduler_state = self.scheduler_cb.get_state()
+
         save_state(
             self.shard,
             self.tfrecord_start,
             self.epoch_start,
             state_path=self.state_path,
+            scheduler=scheduler_state,
         )
+
 
 
     def on_epoch_end(self, epoch, logs=None):

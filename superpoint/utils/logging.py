@@ -36,12 +36,13 @@ def setup_logger(log_dir: Path) -> logging.Logger:
     else:
         existing_file_handler.setFormatter(formatter)
 
-    # Console handler
-    # if not any(isinstance(handler, logging.StreamHandler) and not isinstance(handler, logging.FileHandler)
-    #            for handler in logger.handlers):
-    #     ch = logging.StreamHandler(sys.stdout)
-    #     ch.setFormatter(formatter)
-    #     logger.addHandler(ch)
+    if not any(
+        isinstance(handler, logging.StreamHandler) and not isinstance(handler, logging.FileHandler)
+        for handler in logger.handlers
+    ):
+        ch = logging.StreamHandler(sys.stdout)
+        ch.setFormatter(formatter)
+        logger.addHandler(ch)
 
     return logger
 

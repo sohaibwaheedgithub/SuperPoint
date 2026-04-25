@@ -10,7 +10,7 @@ from superpoint.models.superpoint import SuperPoint
 from superpoint.utils.checkpointing import load_state
 from superpoint.utils.tensorboard import create_tensorboard_writer
 from superpoint.utils.reproducibility import set_global_determinism
-from superpoint.datasets.magicpoint_dataset import MagicPointDataset
+from superpoint.datasets.superpoint_dataset import SuperPointDataset
 from superpoint.configs.superpoint_config import load_superpoint_config
 from superpoint.callbacks.fit_logger import FitLogger
 from superpoint.callbacks.training_image_logger import TrainingImageLogger
@@ -19,6 +19,7 @@ from superpoint.callbacks.training_pr_curve_logger import TrainingPRCurveLogger
 from superpoint.callbacks.training_scalars_logger import TrainingScalarsLogger
 from superpoint.callbacks.train_state_checkpoint import TrainingStateCheckpoint
 from superpoint.losses.descriptor_loss import DescriptorLoss
+from superpoint.training.modules.homographic_adaptation import HomographicAdapter
             
 
 def main(config_path: str):
@@ -50,16 +51,19 @@ def main(config_path: str):
 
     logger.info("SuperPoint training initialized")
     logger.info(f"Experiment directory: {exp_dir}")
-
+    
+    logger.info("Initializing Homographic Adaptor")
+    homograhic_adpator = HomographicAdapter(n_homographies=100)
 
     logger.info("Building Model")
     
     model = SuperPoint(
         mean=cfg.model.mean,
         variance=cfg.model.variance,
+        homographic_adapter=homograhic_adpator
     )
     
-    #model(tf.zeros((cfg.training.batch_size, *MP_INPUT_SHAPE)))
+    model(tf.zeros((cfg.training.batch_size, *INPUT_SHAPE)))
 
     logger.info("Model built successfully")
 
@@ -69,9 +73,9 @@ def main(config_path: str):
     
 
     model.compile(
-        optimizer=keras.optimizers.Adam(learning_rate=0.001),
+        optimizer=keras.optimizers.Adam(learning_rate=cfg.training.learning_rate),
         loss = {
-            "interestPointDecoderOutput": keras.losses.SparseCategoricalCrossentropy(),
+            "interestPointDecoderOutput": keras.losses.SparseCategoricalCrossentropy(from_logits=True),
             "descriptorOutput": DescriptorLoss(positive_margin=1.0, negative_margin=0.2, delta=250.0)
         },
         jit_compile=True
@@ -129,6 +133,32 @@ def main(config_path: str):
         mode=cfg.checkpointing.mode,
     )
 
+    dataset_builder = SuperPointDataset()
+    
+    logger.info("Building validation dataset")
+
+    valid_tfrecords = [random.choice(tf.io.gfile.glob(
+        (Path(cfg.dataset.valid_dir) / "*.tfrecord").as_posix()
+    ))]
+    assert len(valid_tfrecords) > 0, "No validation data found"
+
+    valid_dataset = dataset_builder.build_dataset(
+        valid_tfrecords,
+        batch_size=cfg.training.batch_size,
+        cache=True
+    )
+    vis_batch = next(iter(valid_dataset.take(1)))
+    with tb_writer.as_default():
+        tf.summary.image(
+            "visuals/images",
+            tf.cast(vis_batch, tf.uint8),
+            step=0,
+            max_outputs=4,
+        )
+        tb_writer.flush()
+    
+    logger.info("Validation Dataset Built")
+
 
     for shard_idx in range(state_ckpt_cb.shard, cfg.dataset.total_shards+1):
         
@@ -139,45 +169,25 @@ def main(config_path: str):
         logger.info(f"Continuing training from tfrecord: {Path(train_tfrecords[0]).name}")
         
         for train_tfrecord in train_tfrecords:
-        
             train_dataset = dataset_builder.build_dataset(
                 [train_tfrecord],
                 batch_size=cfg.training.batch_size
             )
-            
+
             model.fit(
                 train_dataset,
                 epochs=1,
                 steps_per_epoch=cfg.training.steps_per_epoch,
                 validation_data=valid_dataset,
                 validation_steps=450,
-                callbacks=[
-                    state_ckpt_cb,
-                    reduce_lr_cb,
-                    FitLogger(logger, epoch=state_ckpt_cb.epoch_start),
-                    TrainingScalarsLogger(tb_writer, epoch=state_ckpt_cb.epoch_start),
-                    TrainingHistogramLogger(
-                        tb_writer,
-                        images=vis_batch["image"],
-                        epoch=state_ckpt_cb.epoch_start
-                    ),
-                    TrainingImageLogger(
-                        tb_writer,
-                        images=vis_batch["image"],
-                        points=vis_batch["points"],
-                        epoch=state_ckpt_cb.epoch_start,
-                    )
-                ],
                 verbose=1,
             )
-        
+
+            
+            
         state_ckpt_cb.advance_to_next_shard()
 
     
 
 if __name__ == "__main__":
     main("configs/superpoint.yaml")
-
-
-
-    

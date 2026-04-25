@@ -5,8 +5,8 @@ from pathlib import Path
 import tensorflow as tf
 
 from superpoint.constants import INPUT_SHAPE
-from superpoint.configs.magicpoint_config import load_magicpoint_config
 from superpoint.utils.logging import setup_logger
+from superpoint.configs.magicpoint_config import load_magicpoint_config
 
 
 
@@ -111,11 +111,12 @@ if __name__ == "__main__":
     logger.info("Starting bin precomputation")
     logger.info(f"Writing logs to: {exp_dir / 'train.log'}")
 
+    if tfrecord_files:
+        logger.info(f"Processing dir: {Path(tfrecord_files[0]).parent}")
+
     for file_idx, tfrecord in enumerate(tfrecord_files, start=1):
         tfrecord_path = Path(tfrecord)
-        logger.info(
-            f"Processing dir: {tfrecord_path.parent} | file {file_idx}/{total_files}: {tfrecord_path.name}"
-        )
+        logger.info(f"Processing file {file_idx}/{total_files}: {tfrecord_path.name}")
         process_tfrecord(tfrecord)
 
     logger.info("Bins added to TFRecords")

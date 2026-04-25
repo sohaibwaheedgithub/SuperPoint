@@ -63,8 +63,8 @@ class SuperPoint(keras.Model):
     def train_step(self, data):
         if self.homographic_adapter is None:
             raise ValueError("SuperPoint.train_step requires a homographic_adapter.")
-
-        batch_images = data["batch_images"] if "batch_images" in data else data["image"]
+        
+        batch_images = data["image"] if isinstance(data, dict) else data
 
         with tf.GradientTape() as tape:
             homographic_batch = self.homographic_adapter.generate_data(
@@ -112,7 +112,8 @@ class SuperPoint(keras.Model):
         if self.homographic_adapter is None:
             raise ValueError("SuperPoint.test_step requires a homographic_adapter.")
 
-        batch_images = data["batch_images"] if "batch_images" in data else data["image"]
+        batch_images = data["image"] if isinstance(data, dict) else data
+        
         homographic_batch = self.homographic_adapter.generate_data(
             batch_images=batch_images,
             interest_point_model=self,

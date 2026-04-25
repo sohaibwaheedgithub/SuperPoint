@@ -19,6 +19,8 @@ from superpoint.callbacks.training_pr_curve_logger import TrainingPRCurveLogger
 from superpoint.callbacks.training_scalars_logger import TrainingScalarsLogger
 from superpoint.callbacks.train_state_checkpoint import TrainingStateCheckpoint
 from superpoint.metrics.corner_detection_average_precision import CornerDetectionAveragePrecision
+from superpoint.callbacks.persistent_reduce_lr_on_plateau import PersistentReduceLROnPlateau
+
             
 
 def main(config_path: str):
@@ -118,6 +120,39 @@ def main(config_path: str):
     else:
         logger.info("No previous training checkpoint found. Starting fresh.")
 
+    # state_ckpt_cb = TrainingStateCheckpoint(
+    #     ckpt=ckpt,
+    #     last_ckpt_manager=last_ckpt_manager,
+    #     best_ckpt_manager=best_ckpt_manager,
+    #     shard_start=state["shard"],
+    #     tfrecord_start=state["tfrecord"],
+    #     epoch_start=state["epoch"],
+    #     state_path=state_path,
+    #     monitor=cfg.checkpointing.monitor,
+    #     mode=cfg.checkpointing.mode,
+    # )
+    
+    # reduce_lr_cb = keras.callbacks.ReduceLROnPlateau(
+    #     monitor="val_loss",
+    #     factor=0.5,
+    #     patience=3,
+    #     min_lr=1e-6,
+    #     cooldown=1,
+    #     verbose=1,
+    # )
+    reduce_lr_cb = PersistentReduceLROnPlateau(
+        monitor="val_loss",
+        factor=0.5,
+        patience=3,
+        min_lr=1e-6,
+        cooldown=1,
+        min_delta=1e-4,
+        mode="min",
+        verbose=1,
+    )
+    
+    reduce_lr_cb.set_state(state.get("scheduler", {}))
+
     state_ckpt_cb = TrainingStateCheckpoint(
         ckpt=ckpt,
         last_ckpt_manager=last_ckpt_manager,
@@ -128,16 +163,9 @@ def main(config_path: str):
         state_path=state_path,
         monitor=cfg.checkpointing.monitor,
         mode=cfg.checkpointing.mode,
+        scheduler_cb=reduce_lr_cb,
     )
-    
-    reduce_lr_cb = keras.callbacks.ReduceLROnPlateau(
-        monitor="val_loss",
-        factor=0.5,
-        patience=3,
-        min_lr=1e-6,
-        cooldown=1,
-        verbose=1,
-    )
+
 
     dataset_builder = MagicPointDataset()
     
