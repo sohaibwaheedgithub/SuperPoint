@@ -216,8 +216,8 @@ def main(config_path: str):
                 validation_data=valid_dataset,
                 validation_steps=450,
                 callbacks=[
-                    state_ckpt_cb,
                     reduce_lr_cb,
+                    state_ckpt_cb,
                     FitLogger(logger, epoch=state_ckpt_cb.epoch_start),
                     TrainingScalarsLogger(tb_writer, epoch=state_ckpt_cb.epoch_start),
                     TrainingHistogramLogger(
