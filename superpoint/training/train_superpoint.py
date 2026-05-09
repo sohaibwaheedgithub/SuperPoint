@@ -53,7 +53,8 @@ def main(config_path: str):
     logger.info(f"Experiment directory: {exp_dir}")
     
     logger.info("Initializing Homographic Adaptor")
-    homograhic_adpator = HomographicAdapter(n_homographies=100)
+    homograhic_adpator = HomographicAdapter(n_homographies=cfg.training.n_homographies)
+    logger.info("Successfully initialized Homographic Adaptor")
 
     logger.info("Building Model")
     
@@ -70,7 +71,6 @@ def main(config_path: str):
     logger.info("SuperPoint Model Summary")
 
     model.summary(print_fn=logger.info)
-    
 
     model.compile(
         optimizer=keras.optimizers.Adam(learning_rate=cfg.training.learning_rate),
@@ -78,7 +78,7 @@ def main(config_path: str):
             "interestPointDecoderOutput": keras.losses.SparseCategoricalCrossentropy(from_logits=True),
             "descriptorOutput": DescriptorLoss(positive_margin=1.0, negative_margin=0.2, delta=250.0)
         },
-        jit_compile=True
+        jit_compile=cfg.training.jit_compile
     )
 
     logger.info("Compilation Completed")
@@ -182,7 +182,6 @@ def main(config_path: str):
                 validation_steps=450,
                 verbose=1,
             )
-
             
             
         state_ckpt_cb.advance_to_next_shard()

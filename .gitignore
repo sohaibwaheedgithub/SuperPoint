@@ -212,3 +212,5 @@ data/
 logs/
 runs/
 /configs/
+scripts/precompute_bins.py
+superpoint/visualization/tensorboard/magicpoint_dataset_visualizer.py

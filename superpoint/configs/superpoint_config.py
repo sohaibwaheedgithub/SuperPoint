@@ -14,6 +14,8 @@ class TrainingConfig:
     batch_size: int
     steps_per_epoch: int
     learning_rate: float
+    n_homographies: int
+    jit_compile: False
 
 
 @dataclass

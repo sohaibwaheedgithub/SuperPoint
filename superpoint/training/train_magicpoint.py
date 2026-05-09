@@ -287,7 +287,3 @@ def main(config_path: str):
 
 if __name__ == "__main__":
     main("configs/magicpoint.yaml")
-
-
-
-    
