@@ -4,7 +4,7 @@ import keras
 import random
 import tensorflow as tf
 from pathlib import Path
-from superpoint.constants import INPUT_SHAPE, detection_confidences
+from superpoint.constants import INPUT_SHAPE
 from superpoint.utils.logging import setup_logger
 from superpoint.models.superpoint import SuperPoint
 from superpoint.utils.checkpointing import load_state

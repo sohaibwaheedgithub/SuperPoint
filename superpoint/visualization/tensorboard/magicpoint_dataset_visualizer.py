@@ -182,6 +182,12 @@ class MagicPointDatasetVisualizer:
                     step=step
                 )
 
+                tf.summary.histogram(
+                    "dataset/raw_data_distribution",
+                    images[i],
+                    step=int(i),
+                )
+
         self.writer.flush()
 
 
