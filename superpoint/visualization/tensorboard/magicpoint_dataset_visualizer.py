@@ -196,7 +196,7 @@ class MagicPointDatasetVisualizer:
 
                 tf.summary.histogram(
                     "dataset/standardized_data_distribution",
-                    (images[i] - 0.50) / 0.25,
+                    (images[i] - 0.50) / 0.50,
                     step=int(i),
                 )
 
