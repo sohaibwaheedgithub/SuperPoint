@@ -1,5 +1,5 @@
 import tensorflow as tf
-from superpoint.constants import INPUT_SHAPE, SP_BATCH_SIZE
+from superpoint.constants import INPUT_SHAPE
 
 
 # Homographic adaptation for generating pseudo ground truth
@@ -44,7 +44,7 @@ class HomographicAdapter:
 
         # Tile the grid for batch processing
         grid_flat = tf.expand_dims(grid_flat, axis=0)
-        grid_flat = tf.tile(grid_flat, [SP_BATCH_SIZE, 1, 1])  # [B, 3, H*W]
+        grid_flat = tf.tile(grid_flat, [batch_size, 1, 1])  # [B, 3, H*W]
 
         warped_coords = tf.matmul(H_inv, grid_flat)  # [B, 3, H*W]
         x_warped = warped_coords[:, 0, :] / (warped_coords[:, 2, :] + 1e-8)
@@ -200,6 +200,7 @@ class HomographicAdapter:
         return bins
     
     
+    @tf.function
     def homographic_adaptation(self, img, interest_point_model, threshold=0.015):
         """
         Apply homographic adaptation to get robust interest points using the current model
@@ -234,7 +235,8 @@ class HomographicAdapter:
         # Apply threshold to get binary interest point map
         return tf.cast(tf.greater_equal(final_output, threshold), tf.float32)
 
-
+    
+    @tf.function
     def generate_data(self, batch_images, interest_point_model):
         """
         Generate pseudo ground truth for a batch of images using Homographic Adaptation
@@ -247,15 +249,16 @@ class HomographicAdapter:
         """
         
         # Preallocate arrays for results
-        pseudo_labels = tf.TensorArray(tf.float32, size=SP_BATCH_SIZE, element_shape=INPUT_SHAPE)
-        pseudo_bins = tf.TensorArray(tf.int32, size=SP_BATCH_SIZE, element_shape=[INPUT_SHAPE[0]//8, INPUT_SHAPE[1]//8])
-        transformed_images = tf.TensorArray(tf.float32, size=SP_BATCH_SIZE, element_shape=INPUT_SHAPE)
-        transformed_labels = tf.TensorArray(tf.float32, size=SP_BATCH_SIZE, element_shape=INPUT_SHAPE[:-1])
-        transformed_bins = tf.TensorArray(tf.int32, size=SP_BATCH_SIZE, element_shape=[INPUT_SHAPE[0]//8, INPUT_SHAPE[1]//8])
-        homography_matrices = tf.TensorArray(tf.float32, size=SP_BATCH_SIZE, element_shape=[3, 3])
+        batch_size = tf.shape(batch_images)[0]
+        pseudo_labels = tf.TensorArray(tf.float32, size=batch_size, element_shape=INPUT_SHAPE)
+        pseudo_bins = tf.TensorArray(tf.int32, size=batch_size, element_shape=[INPUT_SHAPE[0]//8, INPUT_SHAPE[1]//8])
+        transformed_images = tf.TensorArray(tf.float32, size=batch_size, element_shape=INPUT_SHAPE)
+        transformed_labels = tf.TensorArray(tf.float32, size=batch_size, element_shape=INPUT_SHAPE[:-1])
+        transformed_bins = tf.TensorArray(tf.int32, size=batch_size, element_shape=[INPUT_SHAPE[0]//8, INPUT_SHAPE[1]//8])
+        homography_matrices = tf.TensorArray(tf.float32, size=batch_size, element_shape=[3, 3])
         
         # Process each image in the batch
-        for i in tf.range(SP_BATCH_SIZE):
+        for i in tf.range(batch_size):
             img = batch_images[i]
             
             # Apply homographic adaptation to get robust points using current model
