@@ -63,17 +63,16 @@ class MagicPointDatasetVisualizer:
         image: (H, W, 1) or (H, W, 3), float [0,1]
         points: (N, 2) in (y, x)
         """
-        img = image.numpy().astype(np.uint8)
-        #img = (img * 255).astype(np.uint8)
+    
+        img = image.numpy()
 
         if img.ndim == 2 or img.shape[-1] == 1:
             img = cv2.cvtColor(img, cv2.COLOR_GRAY2BGR)
-
         
         for y, x in points.numpy().astype(int):
             cv2.circle(img, (x, y), radius, color, -1)
 
-        return tf.convert_to_tensor(img / 255.0, tf.float32)
+        return tf.convert_to_tensor(img, tf.float32)
     
 
     def draw_bins(
@@ -84,7 +83,7 @@ class MagicPointDatasetVisualizer:
         threshold=0.5,
         radius=3,
     ):
-        img = image.numpy().astype(np.uint8)
+        img = image.numpy()
         if img.ndim == 2 or img.shape[-1] == 1:
             img = cv2.cvtColor(img, cv2.COLOR_GRAY2BGR)
 
@@ -94,7 +93,7 @@ class MagicPointDatasetVisualizer:
         for y, x in zip(ys, xs):
             cv2.circle(img, (x, y), radius, color, -1)
 
-        return tf.convert_to_tensor(img / 255.0, tf.float32)
+        return tf.convert_to_tensor(img, tf.float32)
     
 
 
@@ -106,7 +105,7 @@ class MagicPointDatasetVisualizer:
         threshold=1,
         radius=1,
     ):
-        img = image.numpy().astype(np.uint8)
+        img = image.numpy()
         if img.ndim == 2 or img.shape[-1] == 1:
             img = cv2.cvtColor(img, cv2.COLOR_GRAY2BGR)
 
@@ -116,7 +115,7 @@ class MagicPointDatasetVisualizer:
         for y, x in zip(ys, xs):
             cv2.circle(img, (x, y), radius, color, -1)
 
-        return tf.convert_to_tensor(img / 255.0, tf.float32)
+        return tf.convert_to_tensor(img, tf.float32)
 
 
 
@@ -137,7 +136,7 @@ class MagicPointDatasetVisualizer:
         with self.writer.as_default():
             tf.summary.image(
                 "dataset/image",
-                tf.cast(images, tf.uint8),
+                images,
                 step=step,
                 max_outputs=no_images,
             )

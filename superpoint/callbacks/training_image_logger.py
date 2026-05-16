@@ -23,6 +23,17 @@ class TrainingImageLogger(keras.callbacks.Callback):
             x1 = min(w, x + radius + 1)
             image_rgb[y0:y1, x0:x1] = color
         return image_rgb
+   
+
+
+    def on_epoch_begin(self, epoch, logs=None):
+        with self._writer.as_default():
+            tf.summary.image(
+                "samples/on-epoch-start-sample-image-1",
+                self._images[0],
+                step=self._epoch,
+                max_outputs=self._max_outputs,
+            )
 
 
     def on_epoch_end(self, epoch, logs=None):

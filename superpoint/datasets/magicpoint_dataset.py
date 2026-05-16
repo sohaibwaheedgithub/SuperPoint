@@ -39,9 +39,8 @@ class MagicPointDataset(BaseTFRecordDataset):
         parsed = tf.io.parse_single_example(example, self.feature_description)
 
         image = tf.io.decode_png(parsed["image"], channels=1)
-        image = tf.image.resize(image, INPUT_SHAPE[:2])
-        #image = tf.cast(image, tf.float32)
         image = tf.image.convert_image_dtype(image, tf.float32)
+        image = tf.image.resize(image, INPUT_SHAPE[:2])
         image.set_shape(INPUT_SHAPE)
      
         points = tf.io.parse_tensor(parsed["points"], out_type=tf.float32)
@@ -76,3 +75,7 @@ if __name__ == "__main__":
     tfrecord_files = glob("data/tfrecords/synthetic_shapes/train_1/*.tfrecord")[:1]
     magicpoint_dataset = MagicPointDataset()
     dataset = magicpoint_dataset.build_dataset([tfrecord_files], batch_size=32)
+
+    for i in dataset.take(1):
+        print(i["image"])
+        break
