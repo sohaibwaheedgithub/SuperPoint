@@ -40,7 +40,8 @@ class MagicPointDataset(BaseTFRecordDataset):
 
         image = tf.io.decode_png(parsed["image"], channels=1)
         image = tf.image.resize(image, INPUT_SHAPE[:2])
-        image = tf.cast(image, tf.float32)
+        #image = tf.cast(image, tf.float32)
+        image = tf.image.convert_image_dtype(image, tf.float32)
         image.set_shape(INPUT_SHAPE)
      
         points = tf.io.parse_tensor(parsed["points"], out_type=tf.float32)
