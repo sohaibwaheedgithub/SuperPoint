@@ -185,7 +185,7 @@ def main(config_path: str):
     with tb_writer.as_default():
         tf.summary.image(
             "visuals/images",
-            tf.cast(vis_batch["image"], tf.uint8),
+            vis_batch["image"],
             step=0,
             max_outputs=4,
         )

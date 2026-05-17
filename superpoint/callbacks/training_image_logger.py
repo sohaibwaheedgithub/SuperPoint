@@ -55,9 +55,6 @@ class TrainingImageLogger(keras.callbacks.Callback):
 
         overlays = tf.convert_to_tensor(np.stack(overlays, axis=0), dtype=tf.uint8)
 
-        act = outputs["SEConvBlock_1_conv2d_1"][..., 0:1]
-        act = (act - tf.reduce_min(act)) / (tf.reduce_max(act) - tf.reduce_min(act) + 1e-8)
-
             
 
         with self._writer.as_default():
@@ -73,11 +70,30 @@ class TrainingImageLogger(keras.callbacks.Callback):
                 step=self._epoch,
                 max_outputs=self._max_outputs,
             )
+
+
+
+            # SEConvBlock_1_conv2d_1 Filter 1 Logs
+
+            acts = outputs["SEConvBlock_1_conv2d_1"]
+            acts = tf.transpose(acts, [3, 1, 2, 0])       # [64, H, W, 1]
+
+            acts_min = tf.reduce_min(acts, axis=[1, 2], keepdims=True)
+            acts_max = tf.reduce_max(acts, axis=[1, 2], keepdims=True)
+
+            act_imgs = (acts - acts_min) / (acts_max - acts_min + 1e-8)
+
             tf.summary.image(
-                "filters/SEConvBlock_1_conv2d_1",
-                act,
+                "SEConvBlock_1_conv2d_1/Output",
+                act_imgs,
                 step=self._epoch,
                 max_outputs=self._max_outputs
+            )
+
+            tf.summary.histogram(
+                "SEConvBlock_1_conv2d_1/Activations",
+                acts,
+                step=self._epoch
             )
 
             self._writer.flush()
