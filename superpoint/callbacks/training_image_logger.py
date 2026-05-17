@@ -76,7 +76,7 @@ class TrainingImageLogger(keras.callbacks.Callback):
             tf.summary.histogram(
                 "acts/conv2d_1",
                 activations,
-                epoch=self._epoch
+                step=self._epoch
             )
 
             self._writer.flush()
