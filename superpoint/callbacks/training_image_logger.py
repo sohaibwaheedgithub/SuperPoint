@@ -26,16 +26,6 @@ class TrainingImageLogger(keras.callbacks.Callback):
    
 
 
-    def on_epoch_begin(self, epoch, logs=None):
-        with self._writer.as_default():
-            tf.summary.image(
-                "samples/on-epoch-start-sample-image-1",
-                self._images[0],
-                step=self._epoch,
-                max_outputs=self._max_outputs,
-            )
-
-
     def on_epoch_end(self, epoch, logs=None):
         outputs = self.model(self._images, training=False)
         heatmaps = tf.clip_by_value(outputs["heatmap"], 0.0, 1.0)
@@ -65,6 +55,11 @@ class TrainingImageLogger(keras.callbacks.Callback):
 
         overlays = tf.convert_to_tensor(np.stack(overlays, axis=0), dtype=tf.uint8)
 
+
+        x = (self._images[:1] - self.model.mean) / tf.sqrt(self.model.variance)
+        activations = self.model.encoder.SEConvBlock_1.conv2d_1(x, training=False)
+
+
         with self._writer.as_default():
             tf.summary.image(
                 "visuals/heatmaps",
@@ -78,4 +73,10 @@ class TrainingImageLogger(keras.callbacks.Callback):
                 step=self._epoch,
                 max_outputs=self._max_outputs,
             )
+            tf.summary.histogram(
+                "acts/conv2d_1",
+                activations,
+                epoch=self._epoch
+            )
+
             self._writer.flush()
