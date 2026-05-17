@@ -25,15 +25,29 @@ class SEConvBlock(keras.layers.Layer):
         
         
     def call(self, inputs, training=None):
-        return self.batchNorm_2(
-            self.conv2d_2(
-                self.batchNorm_1(
-                    self.conv2d_1(inputs),
-                    training=training
-                )
-            ),
-            training=training
-        )
+        # return self.batchNorm_2(
+        #     self.conv2d_2(
+        #         self.batchNorm_1(
+        #             self.conv2d_1(inputs),
+        #             training=training
+        #         )
+        #     ),
+        #     training=training
+        # )
+        
+        conv2d_1 = self.conv2d_1(inputs)
+        batchNorm_1 = self.batchNorm_1(conv2d_1, training=training)
+        conv2d_2 = self.conv2d_2(batchNorm_1)
+        batchNorm_2 = self.batchNorm_2(conv2d_2, training=training)
+
+        return {
+            "conv2d_1": conv2d_1,
+            "batchNorm_1": batchNorm_1,
+            "conv2d_2": conv2d_2,
+            "batchNorm_2": batchNorm_2
+        }
+    
+
 
     def compute_output_shape(self, input_shape):
         if input_shape is None:
@@ -54,22 +68,41 @@ class SharedEncoder(keras.layers.Layer):
         
     
     def call(self, inputs, training=None):
-        return self.SEConvBlock_4(
-            self.maxPool(
-                self.SEConvBlock_3(
-                    self.maxPool(
-                        self.SEConvBlock_2(
-                            self.maxPool(
-                                self.SEConvBlock_1(inputs, training=training)
-                            ),
-                            training=training
-                        )
-                    ),
-                    training=training
-                )
-            ),
-            training=training
-        )
+        # return self.SEConvBlock_4(
+        #     self.maxPool(
+        #         self.SEConvBlock_3(
+        #             self.maxPool(
+        #                 self.SEConvBlock_2(
+        #                     self.maxPool(
+        #                         self.SEConvBlock_1(inputs, training=training)
+        #                     ),
+        #                     training=training
+        #                 )
+        #             ),
+        #             training=training
+        #         )
+        #     ),
+        #     training=training
+        # )
+
+        SEConvBlock_1 = self.SEConvBlock_1(inputs, training=training)
+        maxPool_1 = self.maxPool(SEConvBlock_1["batchNorm_2"])
+        SEConvBlock_2 = self.SEConvBlock_2(maxPool_1, training=training)
+        maxPool_2 = self.maxPool(SEConvBlock_2["batchNorm_2"])
+        SEConvBlock_3 = self.SEConvBlock_3(maxPool_2, training=training)
+        maxPool_3 = self.maxPool(SEConvBlock_3["batchNorm_2"])
+        SEConvBlock_4 = self.SEConvBlock_4(maxPool_3, training=training)
+
+        return {
+            "SEConvBlock_1": SEConvBlock_1,
+            "maxPool_1": maxPool_1,
+            "SEConvBlock_2": SEConvBlock_2,
+            "maxPool_2": maxPool_2,
+            "SEConvBlock_3": SEConvBlock_3,
+            "maxPool_3": maxPool_3,
+            "SEConvBlock_4": SEConvBlock_4,
+        }
+
 
 
     def compute_output_shape(self, input_shape):

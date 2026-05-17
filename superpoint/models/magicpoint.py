@@ -29,11 +29,14 @@ class MagicPoint(keras.Model):
     def call(self, inputs, training=False):
         x = (inputs - self.mean) / tf.sqrt(self.variance)
         encoder_features = self.encoder(x, training=training)
-        logits = self.decoder(encoder_features, training=training)
+        #logits = self.decoder(encoder_features, training=training)
+        logits = self.decoder(encoder_features["SEConvBlock_4"]["batchNorm_2"], training=training)
         heatmap = self.post(logits)
 
         return {
-            "encoder_features": encoder_features,
+            #"encoder_features": encoder_features,
+            "SEConvBlock_1_conv2d_1": encoder_features["SEConvBlock_1"]["conv2d_1"],
+            "encoder_features": encoder_features["SEConvBlock_4"]["batchNorm_2"],
             "bins": logits,
             "heatmap": heatmap,
         }

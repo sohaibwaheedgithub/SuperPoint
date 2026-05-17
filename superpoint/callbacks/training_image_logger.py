@@ -34,7 +34,7 @@ class TrainingImageLogger(keras.callbacks.Callback):
 
         for i in range(max_count):
             image = self._images[i].numpy()
-            image = np.clip(image, 0.0, 255.0).astype(np.uint8)
+            image = (np.clip(image, 0.0, 1.0) * 255).astype(np.uint8)
             if image.ndim == 2 or image.shape[-1] == 1:
                 image = np.repeat(image[..., :1], 3, axis=-1)
 
@@ -55,10 +55,10 @@ class TrainingImageLogger(keras.callbacks.Callback):
 
         overlays = tf.convert_to_tensor(np.stack(overlays, axis=0), dtype=tf.uint8)
 
+        act = outputs["SEConvBlock_1_conv2d_1"][..., 0:1]
+        act = (act - tf.reduce_min(act)) / (tf.reduce_max(act) - tf.reduce_min(act) + 1e-8)
 
-        x = (self._images[:1] - self.model.mean) / tf.sqrt(self.model.variance)
-        activations = self.model.encoder.SEConvBlock_1.conv2d_1(x, training=False)
-
+            
 
         with self._writer.as_default():
             tf.summary.image(
@@ -73,10 +73,11 @@ class TrainingImageLogger(keras.callbacks.Callback):
                 step=self._epoch,
                 max_outputs=self._max_outputs,
             )
-            tf.summary.histogram(
-                "acts/conv2d_1",
-                activations,
-                step=self._epoch
+            tf.summary.image(
+                "filters/SEConvBlock_1_conv2d_1",
+                act,
+                step=self._epoch,
+                max_outputs=self._max_outputs
             )
 
             self._writer.flush()
