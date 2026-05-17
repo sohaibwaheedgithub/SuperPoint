@@ -87,7 +87,6 @@ class TrainingImageLogger(keras.callbacks.Callback):
                 "SEConvBlock_1_conv2d_1/Output",
                 act_imgs,
                 step=self._epoch,
-                max_outputs=self._max_outputs
             )
 
             tf.summary.histogram(
