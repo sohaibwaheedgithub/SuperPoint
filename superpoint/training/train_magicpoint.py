@@ -171,9 +171,10 @@ def main(config_path: str):
     
     logger.info("Building validation dataset")
 
-    valid_tfrecords = [random.choice(tf.io.gfile.glob(
-        (Path(cfg.dataset.valid_dir) / "*.tfrecord").as_posix()
-    ))]
+    # valid_tfrecords = [random.choice(tf.io.gfile.glob(
+    #     (Path(cfg.dataset.valid_dir) / "*.tfrecord").as_posix()
+    # ))]
+    valid_tfrecords = [(Path(cfg.dataset.valid_dir) / "valid_record_no_1.tfrecord").as_posix()]
     assert len(valid_tfrecords) > 0, "No validation data found"
 
     valid_dataset = dataset_builder.build_dataset(
