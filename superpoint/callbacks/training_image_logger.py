@@ -109,7 +109,7 @@ class TrainingImageLogger(keras.callbacks.Callback):
                 )
 
             # Log Kernel for SEConvBlock_1_conv2d_1
-            filters = tf.transpose(self.model.encoder.SEConvBlock_1.conv2d_1.kernel, [3, 1, 2, 0])
+            filters = tf.transpose(self.model.encoder.SEConvBlock_1.conv2d_1.kernel, [3, 0, 1, 2])
             filters_grid = images_to_grid(filters)
 
             tf.summary.image(

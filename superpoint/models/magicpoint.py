@@ -88,3 +88,16 @@ class MagicPoint(keras.Model):
         return_dict.update(self.cdap_metric.result())
 
         return return_dict
+
+
+
+if __name__ == "__main__":
+    from superpoint.constants import INPUT_SHAPE
+    model = MagicPoint(
+        mean=0.5,
+        variance=0.25,
+    )
+    
+    model(tf.zeros((1, *INPUT_SHAPE)))
+
+    print(model.encoder.SEConvBlock_1.conv2d_1.kernel.shape)

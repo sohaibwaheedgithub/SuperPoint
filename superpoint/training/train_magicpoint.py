@@ -120,26 +120,6 @@ def main(config_path: str):
     else:
         logger.info("No previous training checkpoint found. Starting fresh.")
 
-    # state_ckpt_cb = TrainingStateCheckpoint(
-    #     ckpt=ckpt,
-    #     last_ckpt_manager=last_ckpt_manager,
-    #     best_ckpt_manager=best_ckpt_manager,
-    #     shard_start=state["shard"],
-    #     tfrecord_start=state["tfrecord"],
-    #     epoch_start=state["epoch"],
-    #     state_path=state_path,
-    #     monitor=cfg.checkpointing.monitor,
-    #     mode=cfg.checkpointing.mode,
-    # )
-    
-    # reduce_lr_cb = keras.callbacks.ReduceLROnPlateau(
-    #     monitor="val_loss",
-    #     factor=0.5,
-    #     patience=3,
-    #     min_lr=1e-6,
-    #     cooldown=1,
-    #     verbose=1,
-    # )
     reduce_lr_cb = PersistentReduceLROnPlateau(
         monitor="val_loss",
         factor=0.5,
