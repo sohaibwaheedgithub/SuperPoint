@@ -72,22 +72,81 @@ class TrainingImageLogger(keras.callbacks.Callback):
             )
 
 
-            # SEConvBlock_1_conv2d_1 Filter 1 Logs
+            # # SEConvBlock_1_conv2d_1 Filter 1 Logs
+
+            # acts = outputs["SEConvBlock_1_conv2d_1"][:1]
+            # acts = tf.transpose(acts, [3, 1, 2, 0])       # [64, H, W, 1]
+
+            # acts_min = tf.reduce_min(acts, axis=[1, 2], keepdims=True)
+            # acts_max = tf.reduce_max(acts, axis=[1, 2], keepdims=True)
+
+            # act_imgs = (acts - acts_min) / (acts_max - acts_min + 1e-8)
+
+
+            # tf.summary.image(
+            #     "SEConvBlock_1_conv2d_1/Output",
+            #     act_imgs,
+            #     step=self._epoch,
+            #     max_outputs=64
+            # )
+
+
+
+            # SEConvBlock_1_conv2d_1 Filter Logs
 
             acts = outputs["SEConvBlock_1_conv2d_1"][:1]
-            acts = tf.transpose(acts, [3, 1, 2, 0])       # [64, H, W, 1]
+            acts = tf.transpose(acts, [3, 1, 2, 0])   # [64, H, W, 1]
 
+            # Normalize each activation map independently
             acts_min = tf.reduce_min(acts, axis=[1, 2], keepdims=True)
             acts_max = tf.reduce_max(acts, axis=[1, 2], keepdims=True)
 
             act_imgs = (acts - acts_min) / (acts_max - acts_min + 1e-8)
 
-            tf.summary.image(
-                "SEConvBlock_1_conv2d_1/Output",
+            # ---------------------------------------------------
+            # Create a single 8x8 grid image with borders
+            # ---------------------------------------------------
+
+            num_rows = 8
+            num_cols = 8
+            border = 2
+
+            H = tf.shape(act_imgs)[1]
+            W = tf.shape(act_imgs)[2]
+
+            # Add white border around each image
+            act_imgs = tf.pad(
                 act_imgs,
-                step=self._epoch,
-                max_outputs=64
+                paddings=[[0, 0], [border, border], [border, border], [0, 0]],
+                constant_values=1.0
             )
+
+            H_b = H + 2 * border
+            W_b = W + 2 * border
+
+            # Reshape into grid
+            grid = tf.reshape(
+                act_imgs,
+                [num_rows, num_cols, H_b, W_b, 1]
+            )
+
+            # Rearrange dimensions
+            grid = tf.transpose(grid, [0, 2, 1, 3, 4])
+
+            # Merge into one large image
+            grid = tf.reshape(
+                grid,
+                [1, num_rows * H_b, num_cols * W_b, 1]
+            )
+
+            # Log single image
+            tf.summary.image(
+                "SEConvBlock_1_conv2d_1/GridOutput",
+                grid,
+                step=self._epoch,
+                max_outputs=1
+            )
+
 
             tf.summary.histogram(
                 "SEConvBlock_1_conv2d_1/Activations",
