@@ -2,7 +2,10 @@ import math
 import tensorflow as tf
 
 
-def images_to_grid(images):
+def images_to_grid(images, repeat=False, scale=None):
+    if repeat:
+        images = tf.repeat(images, 10 if not scale else scale, axis=1)
+        images = tf.repeat(images, 10 if not scale else scale, axis=2)
     
     N, H, W, _ = tf.shape(images)
 
