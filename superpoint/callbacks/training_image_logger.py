@@ -101,11 +101,20 @@ class TrainingImageLogger(keras.callbacks.Callback):
                     max_outputs=1
                 )
 
+                # Log activation histogram
+                tf.summary.histogram(
+                    f"SEConvBlock_1_conv2d_1/Activations/Sample {i+1}",
+                    acts,
+                    step=self._epoch
+                )
 
+            # Log Kernel for SEConvBlock_1_conv2d_1
+            filters = tf.transpose(self.model.encoder.SEConvBlock_1.conv2d_1.kernel, [3, 1, 2, 0])
+            filters_grid = images_to_grid(filters)
 
-            tf.summary.histogram(
-                "SEConvBlock_1_conv2d_1/Activations",
-                acts,
+            tf.summary.image(
+                f"SEConvBlock_1_conv2d_1/Kernel",
+                filters_grid,
                 step=self._epoch
             )
 
