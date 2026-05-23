@@ -75,7 +75,7 @@ class TrainingImageLogger(keras.callbacks.Callback):
 
             # SEConvBlock_1_conv2d_1 Filter 1 Logs
 
-            acts = outputs["SEConvBlock_1_conv2d_1"]
+            acts = outputs["SEConvBlock_1_conv2d_1"][:1]
             acts = tf.transpose(acts, [3, 1, 2, 0])       # [64, H, W, 1]
 
             acts_min = tf.reduce_min(acts, axis=[1, 2], keepdims=True)
@@ -86,7 +86,7 @@ class TrainingImageLogger(keras.callbacks.Callback):
             tf.summary.image(
                 "SEConvBlock_1_conv2d_1/Output",
                 act_imgs,
-                step=self._epoch,
+                step=self._epoch
             )
 
             tf.summary.histogram(
