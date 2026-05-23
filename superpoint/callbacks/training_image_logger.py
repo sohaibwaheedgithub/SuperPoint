@@ -1,6 +1,7 @@
 import keras
 import tensorflow as tf
 import numpy as np
+from superpoint.visualization.utils.image_grid import images_to_grid
 
 
 class TrainingImageLogger(keras.callbacks.Callback):
@@ -74,7 +75,7 @@ class TrainingImageLogger(keras.callbacks.Callback):
             # SEConvBlock_1_conv2d_1 Filter Logs
 
             for i in range(outputs["SEConvBlock_1_conv2d_1"].shape[0]):
-                if i == (self._max_outputs-1):
+                if i == self._max_outputs:
                     break
                 
                 acts = outputs["SEConvBlock_1_conv2d_1"][i:i+1]
@@ -89,38 +90,8 @@ class TrainingImageLogger(keras.callbacks.Callback):
                 # ---------------------------------------------------
                 # Create a single 8x8 grid image with borders
                 # ---------------------------------------------------
-
-                num_rows = 8
-                num_cols = 8
-                border = 2
-
-                H = tf.shape(act_imgs)[1]
-                W = tf.shape(act_imgs)[2]
-
-                # Add white border around each image
-                act_imgs = tf.pad(
-                    act_imgs,
-                    paddings=[[0, 0], [border, border], [border, border], [0, 0]],
-                    constant_values=1.0
-                )
-
-                H_b = H + 2 * border
-                W_b = W + 2 * border
-
-                # Reshape into grid
-                grid = tf.reshape(
-                    act_imgs,
-                    [num_rows, num_cols, H_b, W_b, 1]
-                )
-
-                # Rearrange dimensions
-                grid = tf.transpose(grid, [0, 2, 1, 3, 4])
-
-                # Merge into one large image
-                grid = tf.reshape(
-                    grid,
-                    [1, num_rows * H_b, num_cols * W_b, 1]
-                )
+                
+                grid = images_to_grid(act_imgs)
 
                 # Log single image
                 tf.summary.image(
