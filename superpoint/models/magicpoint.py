@@ -10,7 +10,7 @@ from superpoint.metrics.corner_detection_average_precision import CornerDetectio
 
 
 class MagicPoint(keras.Model):
-    def __init__(self, mean, variance):
+    def __init__(self, mean, variance, writer):
         super().__init__()
 
         self.encoder = SharedEncoder(name="shared_encoder")
@@ -25,6 +25,7 @@ class MagicPoint(keras.Model):
         self.variance = tf.constant(variance, dtype=tf.float32)
 
         self._epoch = 0
+        self._writer = writer
 
 
 

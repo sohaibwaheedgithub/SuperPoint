@@ -61,6 +61,7 @@ def main(config_path: str):
     model = MagicPoint(
         mean=cfg.model.mean,
         variance=cfg.model.variance,
+        writer=tb_writer
     )
     
     model(tf.zeros((cfg.training.batch_size, *INPUT_SHAPE)))
