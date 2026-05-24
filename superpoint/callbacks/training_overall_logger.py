@@ -13,27 +13,6 @@ class TrainingOverAllLogger(keras.callbacks.Callback):
         self._max_outputs = max_outputs
         self._pred_threshold = pred_threshold
 
-
-    def on_batch_end(self, batch, logs=None):
-        self.model: MagicPoint
-        optimizer: keras.optimizers.Adam = self.model.optimizer
-        step = optimizer.iterations.numpy()
-
-
-        if step % 50 == 0:
-            with self._writer.as_default():
-                # Gradients Histogram
-                kernel = self.model.encoder.SEConvBlock_1.conv2d_1.kernel
-                for var, grads in zip(self.model.trainable_variables, self.model.latest_gradients):
-                    if var is kernel:
-                        tf.summary.histogram(
-                            "SEConvBlock_1/conv2d_1/Gradients",
-                            grads,
-                            step=step*self._epoch
-                        )
-
-            self._writer.flush()
-
         
 
 

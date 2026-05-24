@@ -55,6 +55,7 @@ class TrainingStateCheckpoint(tf.keras.callbacks.Callback):
     def on_epoch_end(self, epoch, logs=None):
         self.tfrecord_start += 1
         self.epoch_start += 1
+        self.model._epoch = self.epoch_start
 
         # ---- save training state ----
         self._save_training_state()

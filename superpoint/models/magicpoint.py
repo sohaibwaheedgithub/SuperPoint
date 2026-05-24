@@ -24,7 +24,7 @@ class MagicPoint(keras.Model):
         self.mean = tf.constant(mean, dtype=tf.float32)
         self.variance = tf.constant(variance, dtype=tf.float32)
 
-        self.latest_gradients = None
+        self._epoch = 0
 
 
 
@@ -57,6 +57,21 @@ class MagicPoint(keras.Model):
 
         grads = tape.gradient(loss, self.trainable_variables)
         self.optimizer.apply_gradients(zip(grads, self.trainable_variables))
+        
+        step = self.optimizer.iterations
+        if step % 50 == 0:
+            with self._writer.as_default():
+                # Gradients Histogram
+                kernel = self.encoder.SEConvBlock_1.conv2d_1.kernel
+                for var, grads in zip(self.trainable_variables, grads):
+                    if var is kernel:
+                        tf.summary.histogram(
+                            "SEConvBlock_1/conv2d_1/Gradients",
+                            grads,
+                            step=step*self._epoch
+                        )
+
+            self._writer.flush()
         
         return_dict = {}
         for metric in self.metrics:
