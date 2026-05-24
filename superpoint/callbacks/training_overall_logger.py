@@ -9,7 +9,6 @@ class TrainingOverAllLogger(keras.callbacks.Callback):
         super().__init__()
         self._writer = writer
         self._images = tf.convert_to_tensor(images)
-        self._points = tf.convert_to_tensor(points)
         self._epoch = epoch
         self._max_outputs = max_outputs
         self._pred_threshold = pred_threshold
@@ -30,7 +29,7 @@ class TrainingOverAllLogger(keras.callbacks.Callback):
                         tf.summary.histogram(
                             "SEConvBlock_1/conv2d_1/Gradients",
                             grads,
-                            step=step
+                            step=step*self._epoch
                         )
 
             self._writer.flush()

@@ -18,6 +18,7 @@ from superpoint.callbacks.training_histogram_logger import TrainingHistogramLogg
 from superpoint.callbacks.training_pr_curve_logger import TrainingPRCurveLogger
 from superpoint.callbacks.training_scalars_logger import TrainingScalarsLogger
 from superpoint.callbacks.train_state_checkpoint import TrainingStateCheckpoint
+from superpoint.callbacks.training_overall_logger import TrainingOverAllLogger
 from superpoint.metrics.corner_detection_average_precision import CornerDetectionAveragePrecision
 from superpoint.callbacks.persistent_reduce_lr_on_plateau import PersistentReduceLROnPlateau
 
@@ -201,16 +202,21 @@ def main(config_path: str):
                     state_ckpt_cb,
                     FitLogger(logger, epoch=state_ckpt_cb.epoch_start),
                     TrainingScalarsLogger(tb_writer, epoch=state_ckpt_cb.epoch_start),
-                    TrainingHistogramLogger(
+                    # TrainingHistogramLogger(
+                    #     tb_writer,
+                    #     images=vis_batch["image"],
+                    #     epoch=state_ckpt_cb.epoch_start
+                    # ),
+                    # TrainingImageLogger(
+                    #     tb_writer,
+                    #     images=vis_batch["image"],
+                    #     points=vis_batch["points"],
+                    #     epoch=state_ckpt_cb.epoch_start,
+                    # )
+                    TrainingOverAllLogger(
                         tb_writer,
                         images=vis_batch["image"],
                         epoch=state_ckpt_cb.epoch_start
-                    ),
-                    TrainingImageLogger(
-                        tb_writer,
-                        images=vis_batch["image"],
-                        points=vis_batch["points"],
-                        epoch=state_ckpt_cb.epoch_start,
                     )
                 ],
                 verbose=1,
