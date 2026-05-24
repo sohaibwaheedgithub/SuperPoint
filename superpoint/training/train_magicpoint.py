@@ -215,7 +215,7 @@ def main(config_path: str):
                     #     epoch=state_ckpt_cb.epoch_start,
                     # )
                     TrainingOverAllLogger(
-                        tb_writer,
+                        create_tensorboard_writer(exp_dir, suffix="SEConvBlock_1"),
                         images=vis_batch["image"],
                         epoch=state_ckpt_cb.epoch_start
                     )
