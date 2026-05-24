@@ -5,7 +5,7 @@ from superpoint.models.magicpoint import MagicPoint
 
 
 class TrainingOverAllLogger(keras.callbacks.Callback):
-    def __init__(self, writer, images, points, epoch, max_outputs=4, pred_threshold=0.5):
+    def __init__(self, writer, images, epoch, max_outputs=4, pred_threshold=0.5):
         super().__init__()
         self._writer = writer
         self._images = tf.convert_to_tensor(images)
