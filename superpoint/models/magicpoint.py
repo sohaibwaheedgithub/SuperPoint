@@ -59,19 +59,31 @@ class MagicPoint(keras.Model):
         self.optimizer.apply_gradients(zip(grads, self.trainable_variables))
         
         step = self.optimizer.iterations
-        if step % 50 == 0:
-            with self._writer.as_default():
-                # Gradients Histogram
-                kernel = self.encoder.SEConvBlock_1.conv2d_1.kernel
-                for var, grads in zip(self.trainable_variables, grads):
-                    if var is kernel:
-                        tf.summary.histogram(
-                            "SEConvBlock_1/conv2d_1/Gradients",
-                            grads,
-                            step=step*self._epoch
-                        )
+        # if step % 50 == 0:
+        #     with self._writer.as_default():
+        #         # Gradients Histogram
+        #         kernel = self.encoder.SEConvBlock_1.conv2d_1.kernel
+        #         for var, grads in zip(self.trainable_variables, grads):
+        #             if var is kernel:
+        #                 tf.summary.histogram(
+        #                     "SEConvBlock_1/conv2d_1/Gradients",
+        #                     grads,
+        #                     step=step*self._epoch
+        #                 )
 
-            self._writer.flush()
+        #     self._writer.flush()
+        
+        with self._writer.as_default():
+            tf.cond(
+                tf.equal(step % 50, 0),
+                lambda: tf.summary.histogram(
+                    "SEConvBlock_1/conv2d_1/Gradients",
+                    grads,
+                    step=step * self._epoch
+                ),
+                lambda: tf.no_op()
+            )
+        self._writer.flush()
         
         return_dict = {}
         for metric in self.metrics:
