@@ -24,6 +24,8 @@ class MagicPoint(keras.Model):
         self.mean = tf.constant(mean, dtype=tf.float32)
         self.variance = tf.constant(variance, dtype=tf.float32)
 
+        self.latest_gradients = None
+
 
 
     def call(self, inputs, training=False):
@@ -65,7 +67,9 @@ class MagicPoint(keras.Model):
         self.cdap_metric.update_state(data["points"], outputs["heatmap"])
         return_dict.update(self.cdap_metric.result())
 
-        return {**return_dict, "gradients": grads}
+        self.latest_gradients = grads
+
+        return return_dict
 
 
 

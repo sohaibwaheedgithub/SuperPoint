@@ -22,11 +22,10 @@ class TrainingOverAllLogger(keras.callbacks.Callback):
 
 
         if step % 50 == 0:
-            gradients = logs["gradients"]
             with self._writer.as_default():
                 # Gradients Histogram
                 kernel = self.model.encoder.SEConvBlock_1.conv2d_1.kernel
-                for var, grads in zip(self.model.trainable_variables, gradients):
+                for var, grads in zip(self.model.trainable_variables, self.model.latest_gradients):
                     if var is kernel:
                         tf.summary.histogram(
                             "SEConvBlock_1/conv2d_1/Gradients",
