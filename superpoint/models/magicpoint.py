@@ -43,6 +43,20 @@ class MagicPoint(keras.Model):
             "bins": logits,
             "heatmap": heatmap,
         }
+    
+
+    def log_gradients(self, step, grads):
+        
+        kernel = self.encoder.SEConvBlock_1.conv2d_1.kernel
+        for var, grad in zip(self.trainable_variables, grads):
+            if var is kernel:
+                tf.summary.histogram(
+                    "SEConvBlock_1/conv2d_1/Gradients",
+                    grad,
+                    step=step * self._epoch
+                )
+
+        return tf.no_op()
 
 
 
@@ -77,11 +91,7 @@ class MagicPoint(keras.Model):
         with self._writer.as_default():
             tf.cond(
                 tf.equal(step % 50, 0),
-                lambda: tf.summary.histogram(
-                    "SEConvBlock_1/conv2d_1/Gradients",
-                    grads,
-                    step=step * self._epoch
-                ),
+                lambda: self.log_gradients(step, grads),
                 lambda: tf.no_op()
             )
         self._writer.flush()
