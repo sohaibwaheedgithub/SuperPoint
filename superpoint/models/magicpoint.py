@@ -65,7 +65,7 @@ class MagicPoint(keras.Model):
         self.cdap_metric.update_state(data["points"], outputs["heatmap"])
         return_dict.update(self.cdap_metric.result())
 
-        return return_dict
+        return {**return_dict, "gradients": grads}
 
 
 

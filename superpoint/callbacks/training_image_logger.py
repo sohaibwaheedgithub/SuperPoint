@@ -56,7 +56,6 @@ class TrainingImageLogger(keras.callbacks.Callback):
 
         overlays = tf.convert_to_tensor(np.stack(overlays, axis=0), dtype=tf.uint8)
 
-            
 
         with self._writer.as_default():
             tf.summary.image(
@@ -72,50 +71,42 @@ class TrainingImageLogger(keras.callbacks.Callback):
                 max_outputs=self._max_outputs,
             )
 
+
+
             # SEConvBlock_1_conv2d_1 Filter Logs
 
-            for i in range(outputs["SEConvBlock_1_conv2d_1"].shape[0]):
-                if i == self._max_outputs:
-                    break
+            # for i in range(outputs["SEConvBlock_1_conv2d_1"].shape[0]):
+            #     if i == self._max_outputs:
+            #         break
                 
-                acts = outputs["SEConvBlock_1_conv2d_1"][i:i+1]
-                acts = tf.transpose(acts, [3, 1, 2, 0])   # [64, H, W, 1]
+            #     acts = outputs["SEConvBlock_1_conv2d_1"][i:i+1]
+            #     acts = tf.transpose(acts, [3, 1, 2, 0])   # [64, H, W, 1]
 
-                # Normalize each activation map independently
-                acts_min = tf.reduce_min(acts, axis=[1, 2], keepdims=True)
-                acts_max = tf.reduce_max(acts, axis=[1, 2], keepdims=True)
+            #     # Normalize each activation map independently
+            #     acts_min = tf.reduce_min(acts, axis=[1, 2], keepdims=True)
+            #     acts_max = tf.reduce_max(acts, axis=[1, 2], keepdims=True)
 
-                act_imgs = (acts - acts_min) / (acts_max - acts_min + 1e-8)
+            #     act_imgs = (acts - acts_min) / (acts_max - acts_min + 1e-8)
 
-                # ---------------------------------------------------
-                # Create a single 8x8 grid image with borders
-                # ---------------------------------------------------
+            #     # ---------------------------------------------------
+            #     # Create a single 8x8 grid image with borders
+            #     # ---------------------------------------------------
                 
-                grid = images_to_grid(act_imgs)
+            #     grid = images_to_grid(act_imgs)
 
-                # Log single image
-                tf.summary.image(
-                    f"SEConvBlock_1_conv2d_1/Activations/Sample {i+1}",
-                    grid,
-                    step=self._epoch,
-                    max_outputs=1
-                )
+            #     # Log single image
+            #     tf.summary.image(
+            #         f"SEConvBlock_1_conv2d_1/Activations/Sample {i+1}",
+            #         grid,
+            #         step=self._epoch,
+            #         max_outputs=1
+            #     )
 
-                # Log activation histogram
-                tf.summary.histogram(
-                    f"SEConvBlock_1_conv2d_1/Activations Hist/Sample {i+1}",
-                    acts,
-                    step=self._epoch
-                )
-
-            # Log Kernel for SEConvBlock_1_conv2d_1
-            filters = tf.transpose(self.model.encoder.SEConvBlock_1.conv2d_1.kernel, [3, 0, 1, 2])
-            filters_grid = images_to_grid(filters, repeat=True)
-
-            tf.summary.image(
-                f"SEConvBlock_1_conv2d_1/Kernel",
-                filters_grid,
-                step=self._epoch
-            )
+            #     # Log activation histogram
+            #     tf.summary.histogram(
+            #         f"SEConvBlock_1_conv2d_1/Activations Hist/Sample {i+1}",
+            #         acts,
+            #         step=self._epoch
+            #     )
 
             self._writer.flush()
