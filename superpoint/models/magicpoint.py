@@ -50,12 +50,11 @@ class MagicPoint(keras.Model):
         kernel = self.encoder.SEConvBlock_1.conv2d_1.kernel
         for var, grad in zip(self.trainable_variables, grads):
             if var is kernel:
-                with tf.name_scope(None):
-                    tf.summary.histogram(
-                        "SEConvBlock_1/conv2d_1/Gradients",
-                        grad,
-                        step=step * self._epoch
-                    )
+                tf.summary.histogram(
+                    "SEConvBlock_1/conv2d_1/Gradients",
+                    grad,
+                    step=step * self._epoch
+                )
 
         return tf.no_op()
 
@@ -77,11 +76,13 @@ class MagicPoint(keras.Model):
         step = self.optimizer.iterations
         
         with self._writer.as_default():
-            tf.cond(
-                tf.equal(step % 50, 0),
-                lambda: self.log_gradients(step, grads),
-                lambda: tf.no_op()
-            )
+            # tf.cond(
+            #     tf.equal(step % 50, 0),
+            #     lambda: self.log_gradients(step, grads),
+            #     lambda: tf.no_op()
+            # )
+            with tf.summary.record_if(tf.equal(step % 50, 0)):
+                self.log_gradients(step, grads)
         self._writer.flush()
         
         return_dict = {}
