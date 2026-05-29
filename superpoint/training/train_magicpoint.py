@@ -37,6 +37,14 @@ def main(config_path: str):
     # 3. Setup logging
     logger = setup_logger(exp_dir)
     tb_writer = create_tensorboard_writer(exp_dir)
+
+    writers = {
+        "SEConvBlock_1": create_tensorboard_writer(exp_dir, suffix="SEConvBlock_1"),
+        "SEConvBlock_2": create_tensorboard_writer(exp_dir, suffix="SEConvBlock_2"),
+        "SEConvBlock_3": create_tensorboard_writer(exp_dir, suffix="SEConvBlock_3"),
+        "SEConvBlock_4": create_tensorboard_writer(exp_dir, suffix="SEConvBlock_4"),
+    }
+
     # Route TensorFlow logs to the same handlers as our logger
     tf_logger = tf.get_logger()
     tf_logger.setLevel(logger.level)
@@ -61,7 +69,7 @@ def main(config_path: str):
     model = MagicPoint(
         mean=cfg.model.mean,
         variance=cfg.model.variance,
-        writer=tb_writer
+        writers=writers
     )
     
     model(tf.zeros((cfg.training.batch_size, *INPUT_SHAPE)))
@@ -215,7 +223,7 @@ def main(config_path: str):
                     #     epoch=state_ckpt_cb.epoch_start,
                     # )
                     TrainingOverAllLogger(
-                        exp_dir=exp_dir,
+                        writers=writers,
                         images=vis_batch["image"],
                         epoch=state_ckpt_cb.epoch_start
                     )

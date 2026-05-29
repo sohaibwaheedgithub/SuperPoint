@@ -10,7 +10,7 @@ from superpoint.metrics.corner_detection_average_precision import CornerDetectio
 
 
 class MagicPoint(keras.Model):
-    def __init__(self, mean, variance, writer):
+    def __init__(self, mean, variance, writers: dict):
         super().__init__()
 
         self.encoder = SharedEncoder(name="shared_encoder")
@@ -25,7 +25,7 @@ class MagicPoint(keras.Model):
         self.variance = tf.constant(variance, dtype=tf.float32)
 
         self._epoch = 0
-        self._writer = writer
+        self._writers = writers
 
 
 
@@ -37,27 +37,18 @@ class MagicPoint(keras.Model):
         heatmap = self.post(logits)
 
         return {
-            #"encoder_features": encoder_features,
             "SEConvBlock_1_conv2d_1": encoder_features["SEConvBlock_1"]["conv2d_1"],
+            "SEConvBlock_1_conv2d_2": encoder_features["SEConvBlock_1"]["conv2d_2"],
+            "SEConvBlock_2_conv2d_1": encoder_features["SEConvBlock_2"]["conv2d_1"],
+            "SEConvBlock_2_conv2d_2": encoder_features["SEConvBlock_2"]["conv2d_2"],
+            "SEConvBlock_3_conv2d_1": encoder_features["SEConvBlock_3"]["conv2d_1"],
+            "SEConvBlock_3_conv2d_2": encoder_features["SEConvBlock_3"]["conv2d_2"],
+            "SEConvBlock_4_conv2d_1": encoder_features["SEConvBlock_4"]["conv2d_1"],
+            "SEConvBlock_4_conv2d_2": encoder_features["SEConvBlock_4"]["conv2d_2"],
             "encoder_features": encoder_features["SEConvBlock_4"]["batchNorm_2"],
             "bins": logits,
             "heatmap": heatmap,
         }
-    
-
-    def log_gradients(self, step, grads):
-        
-        kernel = self.encoder.SEConvBlock_1.conv2d_1.kernel
-        for var, grad in zip(self.trainable_variables, grads):
-            if var is kernel:
-                tf.summary.histogram(
-                    "SEConvBlock_1/conv2d_1/Gradients",
-                    grad,
-                    step=step * self._epoch
-                )
-
-        return tf.no_op()
-
 
 
     def train_step(self, data):
@@ -74,16 +65,30 @@ class MagicPoint(keras.Model):
         self.optimizer.apply_gradients(zip(grads, self.trainable_variables))
         
         step = self.optimizer.iterations
-        
-        with self._writer.as_default():
-            # tf.cond(
-            #     tf.equal(step % 50, 0),
-            #     lambda: self.log_gradients(step, grads),
-            #     lambda: tf.no_op()
-            # )
-            with tf.summary.record_if(tf.equal(step % 50, 0)):
-                self.log_gradients(step, grads)
-        self._writer.flush()
+
+        grads_by_var = {
+            id(var): grad
+            for var, grad in zip(self.trainable_variables, grads)
+            if grad is not None
+        }
+
+        with tf.summary.record_if(tf.equal(step % 50, 0)):
+            for block, writer in self._writers.items():
+                block_object = getattr(self.encoder, block)
+
+                with writer.as_default():
+                    for conv_name in ("conv2d_1", "conv2d_2"):
+                        conv_layer = getattr(block_object, conv_name)
+                        grad = grads_by_var.get(id(conv_layer.kernel))
+
+                        if grad is not None:
+                            tf.summary.histogram(
+                                f"{conv_name}/Gradients",
+                                grad,
+                                step=step * self._epoch,
+                            )
+
+                writer.flush()
         
         return_dict = {}
         for metric in self.metrics:

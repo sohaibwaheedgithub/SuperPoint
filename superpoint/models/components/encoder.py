@@ -25,15 +25,6 @@ class SEConvBlock(keras.layers.Layer):
         
         
     def call(self, inputs, training=None):
-        # return self.batchNorm_2(
-        #     self.conv2d_2(
-        #         self.batchNorm_1(
-        #             self.conv2d_1(inputs),
-        #             training=training
-        #         )
-        #     ),
-        #     training=training
-        # )
         
         conv2d_1 = self.conv2d_1(inputs)
         batchNorm_1 = self.batchNorm_1(conv2d_1, training=training)
@@ -68,23 +59,7 @@ class SharedEncoder(keras.layers.Layer):
         
     
     def call(self, inputs, training=None):
-        # return self.SEConvBlock_4(
-        #     self.maxPool(
-        #         self.SEConvBlock_3(
-        #             self.maxPool(
-        #                 self.SEConvBlock_2(
-        #                     self.maxPool(
-        #                         self.SEConvBlock_1(inputs, training=training)
-        #                     ),
-        #                     training=training
-        #                 )
-        #             ),
-        #             training=training
-        #         )
-        #     ),
-        #     training=training
-        # )
-
+        
         SEConvBlock_1 = self.SEConvBlock_1(inputs, training=training)
         maxPool_1 = self.maxPool(SEConvBlock_1["batchNorm_2"])
         SEConvBlock_2 = self.SEConvBlock_2(maxPool_1, training=training)
