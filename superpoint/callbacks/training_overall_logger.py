@@ -38,13 +38,13 @@ class TrainingOverAllLogger(keras.callbacks.Callback):
                 # Activations Histogram
                 tf.summary.histogram(
                     "conv2d_1/Activations",
-                    outputs[f"{block_class}_conv2d_1"],
+                    outputs[f"{block}_conv2d_1"],
                     step=self._epoch
                 )
 
                 tf.summary.histogram(
                     "conv2d_2/Activations",
-                    outputs[f"{block_class}_conv2d_2"],
+                    outputs[f"{block}_conv2d_2"],
                     step=self._epoch
                 )
 
