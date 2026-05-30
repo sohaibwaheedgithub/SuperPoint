@@ -71,36 +71,37 @@ class MagicPoint(keras.Model):
             if grad is not None
         }
 
-        with tf.summary.record_if(tf.equal(step % 50, 0)):
-            for block, writer in self._writers.items():
-                if hasattr(self.encoder, block):
-                    block_object = getattr(self.encoder, block)
+        for block, writer in self._writers.items():
+            if hasattr(self.encoder, block):
+                block_object = getattr(self.encoder, block)
 
-                    with writer.as_default():
-                        for conv_name in ("conv2d_1", "conv2d_2"):
-                            conv_layer = getattr(block_object, conv_name)
-                            grad = grads_by_var.get(id(conv_layer.kernel))
+                with writer.as_default():
+                    for conv_name in ("conv2d_1", "conv2d_2"):
+                        conv_layer = getattr(block_object, conv_name)
+                        grad = grads_by_var.get(id(conv_layer.kernel))
 
-                            if grad is not None:
+                        if grad is not None:
+                            update_norm = tf.norm(self.optimizer.learning_rate * grad)
+                            weight_norm = tf.norm(conv_layer.kernel)
+
+                            ratio = update_norm / (weight_norm + 1e-8)
+
+                            tf.summary.scalar(
+                                f"{conv_name}/UpdateWeightRatio",
+                                ratio,
+                                step=step
+                            )
+
+                            with tf.summary.record_if(tf.equal(step % 50, 0)):
                                 tf.summary.histogram(
                                     f"{conv_name}/Gradients",
                                     grad,
                                     step=step,
                                 )
 
-                                update_norm = tf.norm(self.optimizer.learning_rate * grad)
-                                weight_norm = tf.norm(conv_layer.kernel)
-
-                                ratio = update_norm / (weight_norm + 1e-8)
-
-                                tf.summary.scalar(
-                                    f"{conv_name}/UpdateWeightRatio",
-                                    ratio,
-                                    step=step
-                                )   
-
-                    writer.flush()
+                writer.flush()
         
+
         return_dict = {}
         for metric in self.metrics:
             if metric.name == "loss":
