@@ -40,9 +40,12 @@ def main(config_path: str):
 
     writers = {
         "SEConvBlock_1": create_tensorboard_writer(exp_dir, sub_dir="SEConvBlock_1"),
+        "maxPool_1": create_tensorboard_writer(exp_dir, sub_dir="MaxPool_1"),
         "SEConvBlock_2": create_tensorboard_writer(exp_dir, sub_dir="SEConvBlock_2"),
+        "maxPool_2": create_tensorboard_writer(exp_dir, sub_dir="MaxPool_2"),
         "SEConvBlock_3": create_tensorboard_writer(exp_dir, sub_dir="SEConvBlock_3"),
-        "SEConvBlock_4": create_tensorboard_writer(exp_dir, sub_dir="SEConvBlock_4"),
+        "maxPool_3": create_tensorboard_writer(exp_dir, sub_dir="MaxPool_3"),
+        "SEConvBlock_4": create_tensorboard_writer(exp_dir, sub_dir="SEConvBlock_4")
     }
 
     # Route TensorFlow logs to the same handlers as our logger
@@ -186,16 +189,6 @@ def main(config_path: str):
             vis_batch_writer.flush()
         del vis_batch_writer
 
-
-
-    # with tb_writer.as_default():
-    #     tf.summary.image(
-    #         "visuals/images",
-    #         vis_batch["image"],
-    #         step=0,
-    #         max_outputs=4,
-    #     )
-    #     tb_writer.flush()
     
     logger.info("Validation Dataset Built")
     

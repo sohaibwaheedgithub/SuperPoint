@@ -36,14 +36,13 @@ class MagicPoint(keras.Model):
         heatmap = self.post(logits)
 
         return {
-            "SEConvBlock_1_conv2d_1": encoder_features["SEConvBlock_1"]["conv2d_1"],
-            "SEConvBlock_1_conv2d_2": encoder_features["SEConvBlock_1"]["conv2d_2"],
-            "SEConvBlock_2_conv2d_1": encoder_features["SEConvBlock_2"]["conv2d_1"],
-            "SEConvBlock_2_conv2d_2": encoder_features["SEConvBlock_2"]["conv2d_2"],
-            "SEConvBlock_3_conv2d_1": encoder_features["SEConvBlock_3"]["conv2d_1"],
-            "SEConvBlock_3_conv2d_2": encoder_features["SEConvBlock_3"]["conv2d_2"],
-            "SEConvBlock_4_conv2d_1": encoder_features["SEConvBlock_4"]["conv2d_1"],
-            "SEConvBlock_4_conv2d_2": encoder_features["SEConvBlock_4"]["conv2d_2"],
+            "SEConvBlock_1": encoder_features["SEConvBlock_1"],
+            "maxPool_1": encoder_features["maxPool_1"],
+            "SEConvBlock_2": encoder_features["SEConvBlock_2"],
+            "maxPool_2": encoder_features["maxPool_2"],
+            "SEConvBlock_3": encoder_features["SEConvBlock_3"],
+            "maxPool_3": encoder_features["maxPool_3"],
+            "SEConvBlock_4": encoder_features["SEConvBlock_4"],
             "encoder_features": encoder_features["SEConvBlock_4"]["batchNorm_2"],
             "bins": logits,
             "heatmap": heatmap,
@@ -85,12 +84,13 @@ class MagicPoint(keras.Model):
                             weight_norm = tf.norm(conv_layer.kernel)
 
                             ratio = update_norm / (weight_norm + 1e-8)
-
-                            tf.summary.scalar(
-                                f"{conv_name}/UpdateWeightRatio",
-                                ratio,
-                                step=step
-                            )
+                            
+                            with tf.summary.record_if(True):
+                                tf.summary.scalar(
+                                    f"{conv_name}/UpdateWeightRatio",
+                                    ratio,
+                                    step=step
+                                )
 
                             with tf.summary.record_if(tf.equal(step % 50, 0)):
                                 tf.summary.histogram(
