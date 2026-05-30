@@ -24,7 +24,6 @@ class MagicPoint(keras.Model):
         self.mean = tf.constant(mean, dtype=tf.float32)
         self.variance = tf.constant(variance, dtype=tf.float32)
 
-        self._epoch = 0
         self._writers = writers
 
 
@@ -85,7 +84,7 @@ class MagicPoint(keras.Model):
                             tf.summary.histogram(
                                 f"{conv_name}/Gradients",
                                 grad,
-                                step=step * self._epoch,
+                                step=step,
                             )
 
                 writer.flush()
