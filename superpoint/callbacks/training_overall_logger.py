@@ -22,9 +22,9 @@ class TrainingOverAllLogger(keras.callbacks.Callback):
             
             for block, writer in self._writers.items():
                 with writer.as_default():
-                    block_class = getattr(self.model.encoder, block)
                     
                     if "SE" in block:
+                        block_class = getattr(self.model.encoder, block)
                         # Conv2d 1
                         tf.summary.histogram(
                             "conv2d_1/Kernel",
@@ -92,6 +92,7 @@ class TrainingOverAllLogger(keras.callbacks.Callback):
                         )
                     
                     elif "Max" in block:
+                        block_class = getattr(self.model.encoder, "maxPool")
                         # MaxPool 
                         tf.summary.histogram(
                             "Activations",
@@ -110,9 +111,9 @@ class TrainingOverAllLogger(keras.callbacks.Callback):
         for block, writer in self._writers.items():
             if hasattr(self.model.encoder, block):
                 with writer.as_default():
-                    block_class = getattr(self.model.encoder, block)
-
+        
                     if "SE" in block:
+                        block_class = getattr(self.model.encoder, block)
                         # Conv2d 1
                         tf.summary.histogram(
                             "conv2d_1/Kernel",
@@ -178,6 +179,7 @@ class TrainingOverAllLogger(keras.callbacks.Callback):
                         )
                     
                     elif "Max" in block:
+                        block_class = getattr(self.model.encoder, "maxPool")
                         # Max
                         tf.summary.histogram(
                             "Activations",
