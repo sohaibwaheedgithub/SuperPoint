@@ -39,10 +39,10 @@ def main(config_path: str):
     tb_writer = create_tensorboard_writer(exp_dir)
 
     writers = {
-        "SEConvBlock_1": create_tensorboard_writer(exp_dir, suffix="SEConvBlock_1"),
-        "SEConvBlock_2": create_tensorboard_writer(exp_dir, suffix="SEConvBlock_2"),
-        "SEConvBlock_3": create_tensorboard_writer(exp_dir, suffix="SEConvBlock_3"),
-        "SEConvBlock_4": create_tensorboard_writer(exp_dir, suffix="SEConvBlock_4"),
+        "SEConvBlock_1": create_tensorboard_writer(exp_dir, sub_dir="SEConvBlock_1"),
+        "SEConvBlock_2": create_tensorboard_writer(exp_dir, sub_dir="SEConvBlock_2"),
+        "SEConvBlock_3": create_tensorboard_writer(exp_dir, sub_dir="SEConvBlock_3"),
+        "SEConvBlock_4": create_tensorboard_writer(exp_dir, sub_dir="SEConvBlock_4"),
     }
 
     # Route TensorFlow logs to the same handlers as our logger
@@ -173,6 +173,14 @@ def main(config_path: str):
         cache=True
     )
     vis_batch = next(iter(valid_dataset.take(1)))
+
+    if state_ckpt_cb.epoch_start == 1:
+        from superpoint.visualization.tensorboard.training_start_summarizer import summarize_train_start
+        train_start_writer = create_tensorboard_writer(exp_dir, sub_dir="Training Start")
+        summarize_train_start(train_start_writer, vis_batch)
+
+
+
     with tb_writer.as_default():
         tf.summary.image(
             "visuals/images",
