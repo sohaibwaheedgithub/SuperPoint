@@ -88,6 +88,17 @@ class MagicPoint(keras.Model):
                                     step=step,
                                 )
 
+                                update_norm = tf.norm(self.optimizer.learning_rate * grad)
+                                weight_norm = tf.norm(conv_layer.kernel)
+
+                                ratio = update_norm / (weight_norm + 1e-8)
+
+                                tf.summary.scalar(
+                                    f"{conv_name}/UpdateWeightRatio",
+                                    ratio,
+                                    step=step
+                                )   
+
                     writer.flush()
         
         return_dict = {}

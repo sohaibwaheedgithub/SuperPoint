@@ -28,26 +28,26 @@ class TrainingOverAllLogger(keras.callbacks.Callback):
                         tf.summary.histogram(
                             "conv2d_1/Kernel",
                             block_class.conv2d_1.kernel,
-                            step=-1
+                            step=0
                         )
 
                         tf.summary.histogram(
                             "conv2d_2/Kernel",
                             block_class.conv2d_2.kernel,
-                            step=-1
+                            step=0
                         )
 
                         # Activations Histogram
                         tf.summary.histogram(
                             "conv2d_1/Activations",
                             outputs[f"{block}_conv2d_1"],
-                            step=-1
+                            step=0
                         )
 
                         tf.summary.histogram(
                             "conv2d_2/Activations",
                             outputs[f"{block}_conv2d_2"],
-                            step=-1
+                            step=0
                         )
 
                     writer.flush()   
