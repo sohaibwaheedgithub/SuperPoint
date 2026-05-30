@@ -1,7 +1,7 @@
 import keras
 import tensorflow as tf
 import numpy as np
-from superpoint.visualization.utils.image_grid import images_to_grid
+#from superpoint.visualization.utils.image_grid import images_to_grid
 
 
 class TrainingImageLogger(keras.callbacks.Callback):
