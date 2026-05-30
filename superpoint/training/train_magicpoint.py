@@ -175,20 +175,27 @@ def main(config_path: str):
     vis_batch = next(iter(valid_dataset.take(1)))
 
     if state_ckpt_cb.epoch_start == 1:
-        from superpoint.visualization.tensorboard.training_start_summarizer import summarize_train_start
-        train_start_writer = create_tensorboard_writer(exp_dir, sub_dir="Training Start")
-        summarize_train_start(train_start_writer, vis_batch)
+        vis_batch_writer = create_tensorboard_writer(exp_dir, sub_dir="Input_Images")
+        with vis_batch_writer.as_default():
+            tf.summary.image(
+                "Visualization Batch",
+                vis_batch["image"],
+                step=0,
+                max_outputs=4,
+            )
+            vis_batch_writer.flush()
+        del vis_batch_writer
 
 
 
-    with tb_writer.as_default():
-        tf.summary.image(
-            "visuals/images",
-            vis_batch["image"],
-            step=0,
-            max_outputs=4,
-        )
-        tb_writer.flush()
+    # with tb_writer.as_default():
+    #     tf.summary.image(
+    #         "visuals/images",
+    #         vis_batch["image"],
+    #         step=0,
+    #         max_outputs=4,
+    #     )
+    #     tb_writer.flush()
     
     logger.info("Validation Dataset Built")
     

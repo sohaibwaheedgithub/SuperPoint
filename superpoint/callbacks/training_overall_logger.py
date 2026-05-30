@@ -12,40 +12,81 @@ class TrainingOverAllLogger(keras.callbacks.Callback):
         self._epoch = epoch
         self._max_outputs = max_outputs
         self._pred_threshold = pred_threshold
+   
 
-        
+    def on_train_begin(self, epoch, logs=None):
+        if self._epoch == 1:
+
+            self.model: MagicPoint
+            outputs = self.model(self._images, training=False)
+            
+            for block, writer in self._writers.items():
+                if hasattr(self.model.encoder, block):
+                    with writer.as_default():
+                        block_class = getattr(self.model.encoder, block)
+                        # Weigths Histogram
+                        tf.summary.histogram(
+                            "conv2d_1/Kernel",
+                            block_class.conv2d_1.kernel,
+                            step=-1
+                        )
+
+                        tf.summary.histogram(
+                            "conv2d_2/Kernel",
+                            block_class.conv2d_2.kernel,
+                            step=-1
+                        )
+
+                        # Activations Histogram
+                        tf.summary.histogram(
+                            "conv2d_1/Activations",
+                            outputs[f"{block}_conv2d_1"],
+                            step=-1
+                        )
+
+                        tf.summary.histogram(
+                            "conv2d_2/Activations",
+                            outputs[f"{block}_conv2d_2"],
+                            step=-1
+                        )
+
+                    writer.flush()   
+    
 
 
     def on_epoch_end(self, epoch, logs=None):
+        self.model: MagicPoint
         outputs = self.model(self._images, training=False)
         
         for block, writer in self._writers.items():
-            with writer.as_default():
-                block_class = getattr(self.model.encoder, block)
-                # Weigths Histogram
-                tf.summary.histogram(
-                    "conv2d_1/Kernel",
-                    block_class.conv2d_1.kernel,
-                    step=self._epoch
-                )
+            if hasattr(self.model.encoder, block):
+                with writer.as_default():
+                    block_class = getattr(self.model.encoder, block)
+                    # Weigths Histogram
+                    tf.summary.histogram(
+                        "conv2d_1/Kernel",
+                        block_class.conv2d_1.kernel,
+                        step=self._epoch
+                    )
 
-                tf.summary.histogram(
-                    "conv2d_2/Kernel",
-                    block_class.conv2d_2.kernel,
-                    step=self._epoch
-                )
+                    tf.summary.histogram(
+                        "conv2d_2/Kernel",
+                        block_class.conv2d_2.kernel,
+                        step=self._epoch
+                    )
 
-                # Activations Histogram
-                tf.summary.histogram(
-                    "conv2d_1/Activations",
-                    outputs[f"{block}_conv2d_1"],
-                    step=self._epoch
-                )
+                    # Activations Histogram
+                    tf.summary.histogram(
+                        "conv2d_1/Activations",
+                        outputs[f"{block}_conv2d_1"],
+                        step=self._epoch
+                    )
 
-                tf.summary.histogram(
-                    "conv2d_2/Activations",
-                    outputs[f"{block}_conv2d_2"],
-                    step=self._epoch
-                )
+                    tf.summary.histogram(
+                        "conv2d_2/Activations",
+                        outputs[f"{block}_conv2d_2"],
+                        step=self._epoch
+                    )
 
-            writer.flush()    
+                writer.flush()   
+         
